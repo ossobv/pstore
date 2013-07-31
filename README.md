@@ -1,7 +1,7 @@
 pstore :: Python Protected Password Store
 =========================================
 
-Quick jump: <a id="jump"></a>
+Quick jump: <a id="jump" name="jump"></a>
             [Summary](#summary) |
             [Usage examples](#usage) |
             [Installation](#install) |
