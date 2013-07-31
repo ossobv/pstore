@@ -1,0 +1,35 @@
+# bash completion for pstore
+
+have pstore &&
+_pstore()
+{
+    local cur prev opts q t
+    COMPREPLY=()
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+    opts="--help --verbose --version"
+
+    if [[ ${cur} != -* ]] ; then
+        # Cache the results for 60 seconds
+        q=`echo ${cur} | sed -e 's/^$/--EMPTY--/'`
+        t=`date +%s`
+        if [[ ${BASH_COMPLETION_PSTORE_Q} != ${q} || ${BASH_COMPLETION_PSTORE_T} -lt $((t - 60)) ]]; then
+            BASH_COMPLETION_PSTORE_D=(`pstore --lookup-machine "$cur" 2>/dev/null | sed -e 's/[[:cntrl:]]\+//g'`)
+            BASH_COMPLETION_PSTORE_T=$t
+            BASH_COMPLETION_PSTORE_Q=$q
+        fi
+
+        COMPREPLY=(${BASH_COMPLETION_PSTORE_D[@]})
+        return 0
+    fi
+} &&
+complete -F _pstore pstore
+
+
+# Local variables:
+# mode: shell-script
+# sh-basic-offset: 4
+# sh-indent-comment: t
+# indent-tabs-mode: nil
+# End:
+# ex: ts=4 sw=4 et filetype=sh

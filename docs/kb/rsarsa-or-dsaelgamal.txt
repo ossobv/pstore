@@ -1,0 +1,99 @@
+Date: 2007-10-12 17:06
+Author: MindOfMercury
+URL: http://www.linuxquestions.org/questions/linux-security-4/gpg-rsa-or-dsa-with-el-gamal-for-new-keys-565242/
+
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+I realize that this is a really, really old thread, but I read this, and had to
+intervene.
+
+DSA and Elgamal are both based on an underlying mathematical problem, called the
+discrete logarithm problem, or DLP. The DLP is believed to be very, very hard to
+solve in any reasonable amount of time.
+
+RSA is based on an underlying mathematical problem, called the integer
+factorization problem, or IFP. The IFP is believed to be very, very hard to
+solve in any reasonable amount of time.
+
+Notice a similarity, here? Other than the problem that they're based on, they're
+both very secure. Sorry to be the contradictor here, but RSA is used a hell of a
+lot more than DSA/Elgamal. Cryptographic tokens such as USB tokens and smart
+cards use RSA. Most SSL/TLS sites utilize RSA keys. SSH uses, mostly, RSA keys.
+GnuPG, though, didn't use RSA until more recently, so older GPG users might have
+a problem.
+
+The main reason that DSA keys are used in GnuPG is because of the signature
+system. DSA keys generate signatures whose length depends on the length of the
+hash used to make the signature. DSA is also restricted on the type of hash that
+it can use. It's REQUIRED to use SHA1, you don't have a choice. RSA keys
+generate signatures whose length depends on the length of the signing key. RSA
+keys tend to generate obnoxiously long signatures.
+
+On the flip side of convenience, you have security (which is obviously a hell of
+a lot more important.) It's believed, but not proven, that the DLP that DSA is
+based off of is a harder problem to solve than the IFP that RSA is based on.
+You've also got public exposure and scrutiny. DSA was developed by someone at
+the NSA. RSA was developed by three guys at MIT. RSA, since it's so common, has
+undergone a ridiculous amount of scrutiny and research. DSA hasn't had that much
+exposure or scrutiny. It's also led to the recent factoring of a 1017-bit
+number. Remember what I said about RSA being based on integer factorization?
+Beware, though. While it may sound like DSA is the winner, there is something
+that plays against it. I mentioned that DSA has to use SHA1. Well, SHA1 has been
+broken. Not "totally useless" broken, but "cryptographically iffy" broken. See
+below for a greater explanation. You're also restricted to a 1024-bit DSA key.
+You can't make it any bigger, except in a certain case that I'll discuss later.
+
+So, to summarize what we've got so far:
+
+Pros: RSA - Common, studied, widely believed to be secure.  DSA - Widely
+compatible with GPG of just about any version. Shorter, more convenient
+signatures.
+
+Cons: RSA - Believed to be less secure than a DSA key of the same length.
+Ridiculously long signatures. Not as compatible, GPG wise.  DSA - Small keysize
+might leave it quickly vulnerable to a break. Underlying hash, while still
+trusted, is not suggested for use in new cryptographic applications.
+
+That last one sounds like an issue, right? Well, I thought so, too, until I did
+a little digging. There's an update to DSA. When SHA1 was cracked, and the
+keysize started getting a little too small for comfort, the DSS (the underlying
+specification of the DSA algorithm) was updated. Instead of being restricted to
+a 1024-bit key using SHA1, you're now able to use 2048 and 3072 bit DSA keys
+with better hashing algorithms (SHA224/256 for 2048, and SHA256/384/512 for
+3072, your choice.) This does create a compatibility problem for any version of
+GPG released prior to the updated specification (which is still in draft form.
+Final draft, but draft, nonetheless.) And it's a fairly inconvenient thing, too
+- Anyone that doesn't have a specific command in their gpg.conf won't be able to
+utilize your key.
+
+So, all in all, it's pretty much your choice. A 2048-bit RSA key, or a 1024/2048
+DSA/Elgamal keypair should be more than secure enough, even with the relative
+(and, currently, minor, though that may change) insecurity of the SHA1
+algorithm. The SHA1 break is more theoretical than practical. They found
+collisions (two different plaintexts that hash to the same output) in 2^69
+operations, instead of the 2^80 that they should have. That means that finding a
+collision is 2000 times easier than it should be. It's still trusted as a
+cryptographic hash, but in new systems, it's suggested to move away. It's one of
+those "if you're using it, keep using it, but if you're making a new system, use
+something else" situations.
+
+If you're paranoid, like me, you can go higher; 4096-bit RSA, or 1024/4096
+DSA/ELG-E. Throwing the following in your gpg.conf will let you generate the
+later revision DSA keys and specify the hash algorithm you want to use, like
+what I created for experimental purposes (3072/4096 DSA/ELG-E, SHA512):
+
+expert enable-dsa2 digest-algo sha512
+
+But remember, anyone without the "enable-dsa2" line won't be able to use keys
+generated with this method, even your public key. They also will have a problem
+verifying your signatures.
+
+I'm not a cryptologist, by any means. I've just done a LOT of homework on the
+subject.
+
+Caveat emptor.  -----BEGIN PGP SIGNATURE----- Version: GnuPG v1.4.7 (MingW32)
+
+iD8DBQFHXs4nDoqvN5msFf8RAqftAJwKuCo9frndg1sy85qHNp0KboWEFwCeNkdx
+wXNgCSAWvh6oRgA2a0MFldg= =C/V0 -----END PGP SIGNATURE-----
+

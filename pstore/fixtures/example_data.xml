@@ -1,0 +1,284 @@
+<?xml version="1.0" encoding="utf-8"?>
+<django-objects version="1.0">
+    <object pk="1" model="auth.user">
+        <field type="CharField" name="username">alex</field>
+        <field type="CharField" name="first_name">Alex</field>
+        <field type="CharField" name="last_name"></field>
+        <field type="CharField" name="email">alex@example.com</field>
+        <field type="CharField" name="password">pbkdf2_sha256$10000$XPnMrxhFt7gc$I++t/dSeQUfoHegNIQJj61mjt6sY2lMJyWbWDNX+qfY=</field>
+        <field type="BooleanField" name="is_staff">True</field>
+        <field type="BooleanField" name="is_active">True</field>
+        <field type="BooleanField" name="is_superuser">True</field>
+        <field type="DateTimeField" name="last_login">2012-12-13T10:12:47</field>
+        <field type="DateTimeField" name="date_joined">2012-12-13T10:11:10</field>
+        <field to="auth.group" name="groups" rel="ManyToManyRel"></field>
+        <field to="auth.permission" name="user_permissions" rel="ManyToManyRel"></field>
+    </object>
+    <object pk="2" model="auth.user">
+        <field type="CharField" name="username">harm</field>
+        <field type="CharField" name="first_name">Harm</field>
+        <field type="CharField" name="last_name"></field>
+        <field type="CharField" name="email">harm@example.com</field>
+        <field type="CharField" name="password">pbkdf2_sha256$10000$u9IXYBfYL9v4$pMByoTKcb4HA7bvzdCdH0EK95Aw0wnIv+ByYMLF97dQ=</field>
+        <field type="BooleanField" name="is_staff">False</field>
+        <field type="BooleanField" name="is_active">True</field>
+        <field type="BooleanField" name="is_superuser">False</field>
+        <field type="DateTimeField" name="last_login">2012-12-13T10:12:14</field>
+        <field type="DateTimeField" name="date_joined">2012-12-13T10:12:14</field>
+        <field to="auth.group" name="groups" rel="ManyToManyRel"></field>
+        <field to="auth.permission" name="user_permissions" rel="ManyToManyRel"><object pk="25"></object></field>
+    </object>
+    <object pk="3" model="auth.user">
+        <field type="CharField" name="username">walter</field>
+        <field type="CharField" name="first_name">Walter</field>
+        <field type="CharField" name="last_name"></field>
+        <field type="CharField" name="email">walter@example.com</field>
+        <field type="CharField" name="password">pbkdf2_sha256$10000$DLuLFoRgthPq$fPUzhF/lUm/U5B2UYJMdlTblF/6hHnfPdWaZM9WO3T0=</field>
+        <field type="BooleanField" name="is_staff">True</field>
+        <field type="BooleanField" name="is_active">True</field>
+        <field type="BooleanField" name="is_superuser">True</field>
+        <field type="DateTimeField" name="last_login">2013-02-27T14:31:29</field>
+        <field type="DateTimeField" name="date_joined">2012-12-13T10:12:27</field>
+        <field to="auth.group" name="groups" rel="ManyToManyRel"></field>
+        <field to="auth.permission" name="user_permissions" rel="ManyToManyRel"></field>
+    </object>
+    <object pk="4" model="auth.user">
+        <field type="CharField" name="username">joe</field>
+        <field type="CharField" name="first_name">Joe</field>
+        <field type="CharField" name="last_name">Obsolete</field>
+        <field type="CharField" name="email">joe@example.com</field>
+        <field type="CharField" name="password">pbkdf2_sha256$10000$oHXbvFYekJJv$mraVNLD/L974S+HPClY+CIOBDjwK2LnDCemfgJNLsFk=</field>
+        <field type="BooleanField" name="is_staff">False</field>
+        <field type="BooleanField" name="is_active">True</field>
+        <field type="BooleanField" name="is_superuser">False</field>
+        <field type="DateTimeField" name="last_login">2012-12-13T10:12:14</field>
+        <field type="DateTimeField" name="date_joined">2012-12-13T10:12:14</field>
+        <field to="auth.group" name="groups" rel="ManyToManyRel"></field>
+        <field to="auth.permission" name="user_permissions" rel="ManyToManyRel"></field>
+    </object>
+    <object pk="5" model="auth.user">
+        <field type="CharField" name="username">ingmar</field>
+        <field type="CharField" name="first_name">Ingmar</field>
+        <field type="CharField" name="last_name">Inactive</field>
+        <field type="CharField" name="email">ingmar@example.com</field>
+        <field type="CharField" name="password">pbkdf2_sha256$10000$9KnEIOugmULP$4D4X5nD5cp+zJRXRHn8OUnlbpyHlzP/xJT3mEWb4Ji0=</field>
+        <field type="BooleanField" name="is_staff">True</field>
+        <field type="BooleanField" name="is_active">False</field>
+        <field type="BooleanField" name="is_superuser">True</field>
+        <field type="DateTimeField" name="last_login">2013-02-27T14:36:25</field>
+        <field type="DateTimeField" name="date_joined">2013-02-27T14:36:25</field>
+        <field to="auth.group" name="groups" rel="ManyToManyRel"></field>
+        <field to="auth.permission" name="user_permissions" rel="ManyToManyRel"></field>
+    </object>
+    <!--
+
+    Pstore public keys
+
+    -->
+    <object pk="1" model="pstore.publickey">
+        <field type="DateTimeField" name="created">2012-12-13T11:27:28</field>
+        <field type="DateTimeField" name="modified">2012-12-13T11:27:28</field>
+        <field to="auth.user" name="user" rel="OneToOneRel">1</field>
+        <field type="TextField" name="key">-----BEGIN PGP PUBLIC KEY BLOCK-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+mI0EULkrQAEEAKU++49M+QfiSTFJjWQ8Yyr+OKa0V90aNGbYNaGvfzlPVHNS+AwR
+PTT56yNEJAbGOFEj4aEYxa/puUJP6CZGtDvQn8FlqZ5zgKHXCRSToIVQLJjZLT3M
+Aqqkt7dCGT/nZCXASurT6zFMgR1eo3u4F3Ur5pYeLmnTUtTqC2yIrnTrABEBAAG0
+J0FsZXggQm9vbnN0cmEgKFRFU1QpIDxhbGV4QGV4YW1wbGUuY29tPoi4BBMBAgAi
+BQJQuStAAhsvBgsJCAcDAgYVCAIJCgsEFgIDAQIeAQIXgAAKCRDHl9Gl3Z236/Nw
+A/9mUbXuxDWyZsvbkqEpDJv+PjmMZ6Hk99LzSXqPomJZw0TRWmwGFRuhwl4reOXd
+fWMLfXYcrig/vNpcWmPH+1aU2yf+5wnpiGP0AzHyiarmX3smnvmMPrA8wk7F/ml3
+izheBc4+kzIWdK35QHzVzTTMjFsACQKbXAKBvO2VZb7WDLiNBFC5K0ABBAComc00
+/AE+yoO6loMzEuro1sb/HBxkH5wH8CXje3lw2TOBWf4jEW5EzPVZOpRRqfr9/2hf
+ld4GFt02ecHSe+Qk1mcaWpIUoudm/K93NH2yKaCtPFlJ+jV6qwqEG2d9LGEIVrPP
+XP9/EU75EGWOq7XOy2eIHpZOc43JOKjsuRnf9wARAQABiQE9BBgBAgAJBQJQuStA
+AhsuAKgJEMeX0aXdnbfrnSAEGQECAAYFAlC5K0AACgkQpCCsUhak5FudVAQAoqYX
+5O6Or12+jyJgCdf7oNmiuxRpMSuI2AHeSXvxFIkYrKnRyN90g9Cpg/VQtChfe9ks
+KrYzHFxS2I83Yc8j7Tw0GFqghUqFpwdzMleX6vRwBAfYzRjn+Q5lMRt5F4JUVBGN
+2fR+r9apIwpwrmztB/pqAtqW3ULXfFwOZid8ddjPnAP+LDRBMzsWTdvLcYjlh45E
+hpz5BcK9ocJTth8LfISo7eaAq80hqBcROhxegfW7o30K40TfUl5XLNBR1rV+IqSQ
+4/INWgwGTLFwwvHNNbkcNh6GbwQSMPUrV9v2MCw9K/gYHPIZl58bySm8wziElY7I
+YfZlrgW5q6LkcEoYOni58yQ=
+=XD13
+-----END PGP PUBLIC KEY BLOCK-----</field>
+        <field type="CharField" name="description">Alex B (TEST) &lt;alex@example.com&gt;</field>
+    </object>
+    <object pk="2" model="pstore.publickey">
+        <field type="DateTimeField" name="created">2012-12-13T11:27:52</field>
+        <field type="DateTimeField" name="modified">2012-12-13T11:27:52</field>
+        <field to="auth.user" name="user" rel="OneToOneRel">2</field>
+        <field type="TextField" name="key">-----BEGIN PGP PUBLIC KEY BLOCK-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+mI0EULkrqAEEANNAbAZvH13iidylQmrm3EC1zCj8gm3gWsqK/0a8qKD9sDpjRX/c
+zbBzYdd5f1yzw2O1U9rAcnAFbAeBzsAcw2iDLVcnM6HP1F7Hyz1phR7IssmW4unw
+JYY75WIWjIvSK3gFcZMQNXWlfANs1nwZ+Z6UxaJDvPR7lPIb3ibUeLufABEBAAG0
+JUhhcm0gR2VlcnRzIChURVNUKSA8aGFybUBleGFtcGxlLmNvbT6IuAQTAQIAIgUC
+ULkrqAIbLwYLCQgHAwIGFQgCCQoLBBYCAwECHgECF4AACgkQt8MvZ2DlzsAD4AP/
+Tbu6Sc7IhmrlRdAN90BnxKNJDU9l8uWLGJ8dsli3pZ6NohdNubYgcwi5zBi3Cj8E
+s0vYh8HBxkDPtAUI7vRyhAEw2Chwi1TWlOFEerpl5dNyxoHSDX2TQclnAkUw8KRv
+NLujHCK6p4mEjeBOZdn0r/Fs6YHkdN1y1VysnM3rr0C4jQRQuSuoAQQA0/RU/Er7
+ksyDndEcYOHOb6eBRGrbe+kIrbMWBRhgVN+FyAih+Zu9hACMFFof3OM2MVkQN8St
+vihPzryRZV7HVVJp0LplpzkUGDu5C4iTp1fGKsBZ23F1zfZyETEpMPYCWnKQeNzh
+VD6W7FBnSF5jVWy+Ro5oFc7w2cy7mibh0UUAEQEAAYkBPQQYAQIACQUCULkrqAIb
+LgCoCRC3wy9nYOXOwJ0gBBkBAgAGBQJQuSuoAAoJEN0HDbSvN/v/K2QD/3IW4Kxd
+bOgENnz+ov+aTRO948ooVxy7afdNK5lz41L9596rUSKJr2WFLaqlAQMf7KZTcv+V
+O9o+5UIHP5nOU8b2u0zV/FGdCIDSfc18iKOZmVmyCZCgG/JX01ZcianNPDMxu5tF
+ITbM+pPleA2LgAjOkRZhmX/ry7WZMNXGjNF0Y7UD/0reXaSJqA+gI0QoXSOYw5Sl
+LVs8T2Z40qp7FXhqf91OyhT/bwZHys9BudYZQzwA5a7a/NhyDmZFEk5FdCO7f6wl
+xy+EzYGZSKSPl9c0nHaL+ITKb+H65XmJbbxZ1AvzqqQH6k+0dUyJTzZn1qVLYYPP
+TeO36hkKrU3I+IJdE+GN
+=pxFX
+-----END PGP PUBLIC KEY BLOCK-----</field>
+        <field type="CharField" name="description">Harm G (TEST) &lt;harm@example.com&gt;</field>
+    </object>
+    <object pk="3" model="pstore.publickey">
+        <field type="DateTimeField" name="created">2012-12-13T11:28:16</field>
+        <field type="DateTimeField" name="modified">2012-12-13T11:28:16</field>
+        <field to="auth.user" name="user" rel="OneToOneRel">3</field>
+        <field type="TextField" name="key">-----BEGIN PGP PUBLIC KEY BLOCK-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+mI0EULkssgEEAKeoPrMO5CHxoO8/KTXLA1FP2IQr4n3Og+DvsziIZ6vdcDmhtcsx
+MOaeh+2dsyuIkRA7CNs49Xr6mC/s42Ya5d89iBCrowGiotL0CNuQz8pYs5pKxo64
+gKUG+acAHjHY2Fkpl1zqJ5Q4p83HlfhDFKoxjxyGNPDc7KKyxvPmQl7HABEBAAG0
+KVdhbHRlciBEb2VrZXMgKFRFU1QpIDx3YWx0ZXJAZXhhbXBsZS5jb20+iLgEEwEC
+ACIFAlC5LLICGy8GCwkIBwMCBhUIAgkKCwQWAgMBAh4BAheAAAoJEGbpn9ADUKAc
+LbMD/1+G1PYBBfqfED11X7d0D4Qu58xJsZQql3WHDu51S2KIJdSUng9AZFECJdFq
+U8F0fSVloOf3r007Q4R/O9s1kBH8VkYFiNJSR6I16cfQgzznba5e7D5498BSqaho
+XSfOa1A7TztagmF3eGPsU5oEJFk+rVssSbmT/dNWGIB9HAwjuI0EULkssgEEALDD
+VM6tNpHTYjlXUqtx36ymb8zz2LgkXO0giuAW4eW9C66vMyfyf2f2zP0dzuyTyrlr
+2ucNyi7G98Z8Bd7RMvTas32/CuUpXWOf1lJwvieoyC0EXIPYlMazfpsjjpbw8byz
+dpbyfTU3JMNjutXhCK3n4gdow9A6YNMAVPMZbfVbABEBAAGJAT0EGAECAAkFAlC5
+LLICGy4AqAkQZumf0ANQoBydIAQZAQIABgUCULkssgAKCRAd8UabRycY0BD5BACI
+5IXvybVgjqN2+YhGNfAtdYctB5tiuuTIet4ffkqQKQ81JOARHbQBji28QMQO7c8d
+jFHxSNIBf+FR+U6o4RUAC3OtPI3qO8dZrBzj7anvPbHAvpHs2m3mk6SsYCI7A/fo
+WprThNLtFF+Fh7BWPuCDbFXEjOq7TorWLkkVsMRhgyfrBACjEF6RQN9qBr/Ys0+e
+8S3EXzAzg/7+JVQgPvHHheB+FvsHXJ66f1UZoXG5an/D1sbcx8+kqSX18Xa5Ihy+
+ZMUV0hRsLj2LSKeYJ8gx6K5Q7WY6lMpWjAsUaT0kQ4cXTETxmpICmPtYCPdw/JYq
+AK968N1Yrw+ytDuus3s7xPXYAw==
+=TEm/
+-----END PGP PUBLIC KEY BLOCK-----</field>
+        <field type="CharField" name="description">Walter D (TEST) &lt;walter@example.com&gt;</field>
+    </object>
+    <object pk="4" model="pstore.publickey">
+        <field type="DateTimeField" name="created">2012-12-13T11:28:43</field>
+        <field type="DateTimeField" name="modified">2012-12-13T11:28:43</field>
+        <field to="auth.user" name="user" rel="OneToOneRel">4</field>
+        <field type="TextField" name="key">ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAAAgQDOMBVBteGqm8VFRiPNClGy8RLYf7etIg++qA6Xo7pThorzHU0LvXK0SDeUbTSgPUAfql8pD4hATF89HzOUs5n6YHPvAu2MMXWGfaF5DMb+5f5JbfQLhIohfllmlwWigHinteV6uhP7xNF/4MhEJgvGwa1AP5wESR+QHtefaZDsZQ== joe@example.com</field>
+        <field type="CharField" name="description">joe's public ssh key</field>
+    </object>
+    <object pk="5" model="pstore.publickey">
+        <field type="DateTimeField" name="created">2013-02-27T14:38:32</field>
+        <field type="DateTimeField" name="modified">2013-02-27T14:38:48</field>
+        <field to="auth.user" name="user" rel="OneToOneRel">5</field>
+        <field type="TextField" name="key">ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAAAgQDOMBVBteGqm8VFRiPNClGy8RLYf7etIg++qA6Xo7pThorzHU0LvXK0SDeUbTSgPUAfql8pD4hATF89HzOUs5n6YHPvAu2MMXWGfaF5DMb+5f5JbfQLhIohfllmlwWigHinteV6uhP7xNF/4MhEJgvGwa1AP5wESR+QHtefaZDsZQ== ingmar@example.com</field>
+        <field type="CharField" name="description">ingmar's public ssh key</field>
+    </object>
+    <!--
+
+    Pstore data (objects and permissions)
+
+    -->
+    <object pk="1" model="pstore.object">
+        <field type="DateTimeField" name="created">2012-12-13T10:15:48</field>
+        <field type="DateTimeField" name="modified">2012-12-13T10:16:18</field>
+        <field type="CharField" name="identifier">server.example.com</field>
+    </object>
+    <object pk="2" model="pstore.object">
+        <field type="DateTimeField" name="created">2012-12-13T10:20:36</field>
+        <field type="DateTimeField" name="modified">2012-12-13T10:20:36</field>
+        <field type="CharField" name="identifier">walter.example.com</field>
+    </object>
+    <object pk="3" model="pstore.object">
+        <field type="DateTimeField" name="created">2012-12-13T10:20:36</field>
+        <field type="DateTimeField" name="modified">2012-12-13T10:20:36</field>
+        <field type="CharField" name="identifier">ingmar.example.com</field>
+    </object>
+    <object pk="1" model="pstore.objectperm">
+        <field to="pstore.object" name="object" rel="ManyToOneRel">1</field>
+        <field to="auth.user" name="user" rel="ManyToOneRel">1</field>
+        <field type="BooleanField" name="can_write">True</field>
+    </object>
+    <object pk="2" model="pstore.objectperm">
+        <field to="pstore.object" name="object" rel="ManyToOneRel">1</field>
+        <field to="auth.user" name="user" rel="ManyToOneRel">2</field>
+        <field type="BooleanField" name="can_write">False</field>
+    </object>
+    <object pk="3" model="pstore.objectperm">
+        <field to="pstore.object" name="object" rel="ManyToOneRel">1</field>
+        <field to="auth.user" name="user" rel="ManyToOneRel">4</field>
+        <field type="BooleanField" name="can_write">True</field>
+    </object>
+    <object pk="4" model="pstore.objectperm">
+        <field to="pstore.object" name="object" rel="ManyToOneRel">2</field>
+        <field to="auth.user" name="user" rel="ManyToOneRel">3</field>
+        <field type="BooleanField" name="can_write">True</field>
+    </object>
+    <object pk="5" model="pstore.objectperm">
+        <field to="pstore.object" name="object" rel="ManyToOneRel">3</field>
+        <field to="auth.user" name="user" rel="ManyToOneRel">5</field>
+        <field type="BooleanField" name="can_write">True</field>
+    </object>
+    <!-- "osso" -->
+    <object pk="1" model="pstore.property">
+        <field type="DateTimeField" name="created">2012-12-14T18:09:36</field>
+        <field to="pstore.object" name="object" rel="ManyToOneRel">1</field>
+        <field type="CharField" name="name">ssh-username</field>
+        <field type="PositiveSmallIntegerField" name="type">1</field>
+        <field type="BlobField" name="value">b3Nzbw==</field>
+        <field to="auth.user" name="user" rel="ManyToOneRel"><None></None></field>
+    </object>
+    <!-- "sErVeR!" -->
+    <object pk="2" model="pstore.property">
+        <field type="DateTimeField" name="created">2012-12-14T18:09:36</field>
+        <field to="pstore.object" name="object" rel="ManyToOneRel">1</field>
+        <field type="CharField" name="name">password</field>
+        <field type="PositiveSmallIntegerField" name="type">3</field>
+        <field type="BlobField" name="value">hIwDpCCsUhak5FsBA/9weg9fE+JYZzOndLu5j6xZE3EOZ9sP+bQ4kx8vqhLl3c/ut14skueTX90YkYzj70Vp8JEbn7RpGVTwLpUEu9qqpaocPJsBdatmco2pjGs2BzRX3qWbr7g+a1yZ6Hi8jHIJtr6/espvA9g+bINh0vHmJWpIkU2NvqeWb+alRXcUTNJFAYDLqWIhNjXGvVsd9BJsCMCtQ3dcvzPxpNjonx0ZajeFY3/115rGTqZS4deE6lFt+1pQt7s9orllhOLsHaC4lXuM9MIq</field>
+        <field to="auth.user" name="user" rel="ManyToOneRel">1</field>
+    </object>
+    <object pk="3" model="pstore.property">
+        <field type="DateTimeField" name="created">2012-12-14T18:09:36</field>
+        <field to="pstore.object" name="object" rel="ManyToOneRel">1</field>
+        <field type="CharField" name="name">password</field>
+        <field type="PositiveSmallIntegerField" name="type">3</field>
+        <field type="BlobField" name="value">hIwD3QcNtK83+/8BBACIKF9yyqM9twrs6BEl/8ii3sTgcDCxQtRgA2zdxx6z2Bwn7OPtJGlZ8A5g0Cxjo6GFFZSCmo4oqga5B4QcdB7nsPOrNrjdMqubk0E7otbGScyfYv0ouNMwbkzNjmuCkYbiHhgC1Dp8yCmaaRgqFSCtKTK7RwNjoe9lDDsdaz4wWtJFAcc55yqFMUtcdHETLPEBdwLL5BhiI5q7xc1K0ejfK0qdg84b+hILdZdqcC499dQU6GZWJBiDzZwDv7hj8bCuAyUx5GZF</field>
+        <field to="auth.user" name="user" rel="ManyToOneRel">2</field>
+    </object>
+    <object pk="4" model="pstore.property">
+        <field type="DateTimeField" name="created">2012-12-14T18:09:36</field>
+        <field to="pstore.object" name="object" rel="ManyToOneRel">1</field>
+        <field type="CharField" name="name">password</field>
+        <field type="PositiveSmallIntegerField" name="type">3</field>
+        <field type="BlobField" name="value">l2gq0diqODNUuPqrHuu4WpMGkPdQDevbr+Hto3ipdyIdG2oHCUIeYM23u1/+bC8S8lzcMXxjvkT5GczSSYpTO7piFS0FThNmCK5LkCbCwTxWY5ZTu5z+1CpuyUXNf6ipej204HEipYl3wedJgCdVB0KfPd0DXckE8rXrs9Fles4=</field>
+        <field to="auth.user" name="user" rel="ManyToOneRel">4</field>
+    </object>
+    <!-- "wAlTeR!" -->
+    <object pk="5" model="pstore.property">
+        <field type="DateTimeField" name="created">2012-12-14T18:09:36</field>
+        <field to="pstore.object" name="object" rel="ManyToOneRel">2</field>
+        <field type="CharField" name="name">password</field>
+        <field type="PositiveSmallIntegerField" name="type">3</field>
+        <field type="BlobField" name="value">hIwDHfFGm0cnGNABA/9rsk7Og7QcQiV9XU80pR9WgBQABY2L5be+OTLSm/0Khl9jZEJ3UDRE7c2dmo0n4SLZBPdAeMxxT9BdnE4Tw7e77FEJYtb+eGFyfdIBdbRZEmS7RTxhwUnCyrqkl9hQ3gXXFF9ONMHEqsNdoDEcZ4Waf3JR1nL9VC+YqqwRJBV3P9JFAZyb5Nbd5OEIXckr5VuEU9Nx6DgxTOrG0wXkSvBpJhYy+/NXT8Mb1vwCtF4GsoR9dAJjVu4TkwVafflidbnWGaPfAs5Y</field>
+        <field to="auth.user" name="user" rel="ManyToOneRel">3</field>
+    </object>
+    <!-- "sErVeR!" -->
+    <object pk="6" model="pstore.property">
+        <field type="DateTimeField" name="created">2012-12-14T18:09:36</field>
+        <field to="pstore.object" name="object" rel="ManyToOneRel">3</field>
+        <field type="CharField" name="name">password</field>
+        <field type="PositiveSmallIntegerField" name="type">3</field>
+        <field type="BlobField" name="value">l2gq0diqODNUuPqrHuu4WpMGkPdQDevbr+Hto3ipdyIdG2oHCUIeYM23u1/+bC8S8lzcMXxjvkT5GczSSYpTO7piFS0FThNmCK5LkCbCwTxWY5ZTu5z+1CpuyUXNf6ipej204HEipYl3wedJgCdVB0KfPd0DXckE8rXrs9Fles4=</field>
+        <field to="auth.user" name="user" rel="ManyToOneRel">5</field>
+    </object>
+    <object pk="7" model="pstore.property">
+        <field type="DateTimeField" name="created">2013-02-27T15:06:05</field>
+        <field to="pstore.object" name="object" rel="ManyToOneRel">2</field>
+        <field type="CharField" name="name">description</field>
+        <field type="PositiveSmallIntegerField" name="type">1</field>
+        <field type="BlobField" name="value">RGVzY3JpcHRpb24K</field>
+        <field to="auth.user" name="user" rel="ManyToOneRel"><None></None></field>
+    </object>
+</django-objects>

@@ -1,0 +1,20 @@
+# This is a pip install -r requirements file.
+
+# For installing the CLI interface only, using apt is probably best:
+#
+# apt-get install python-gpgme                  # enc=gpg
+# apt-get install python-crypto python-pyasn1   # enc=sshrsa (old)
+
+## For the back-end / key store ##
+
+Django>=1.3,<1.5	# python-django (built with 1.4, 1.3 works)
+MySQL-python>=1.2.4	# python-mysqldb (requires libmysqlclient-dev)
+# 1.2.4 is needed for tests, older is fine for production,
+# or you could choose a different database backend...
+
+# for gpg key type:
+pygpgme>=0.1		# python-gpgme (requires libgpgme11-dev)
+
+# for sshrsa key type:
+pyasn1>=0.0.8a		# python-pyasn1
+pycrypto>=2.0.1		# python-crypto

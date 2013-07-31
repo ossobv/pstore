@@ -1,0 +1,85 @@
+List of items to do
+===================
+
+* Need to get rid of the INFO/NOTICE messages..
+
+* Fix human i/o:
+  - isatty: strip enter after input, add enter after output :)
+
+* Make revoking permissions more efficient.
+* Make adding permissions more efficient (only add 1).
+
+* When a user is inactive, he is still in the object userlist: but we do not get
+  its key when adding/revoking permissions: we cannot rewrite items. Test and
+  fix that.
+
+* Rate-limit the nonce check by IP. Or add some other method to avoid DoS by
+  annoying users.
+
+* Add more verbose audit logs for all mutable operations.
+* Log all permission-denied-errors to auth.log. Move all auth-log writing to
+  readable log statements, and leave only the decorators for views that aren't
+  cleaned up yet.
+* Do we need to add a post-success-view audit log? Or a post-failure-view log entry?
+
+* Document that you may want to keep some kind of history using database dumps.
+* Document that some alteration notifications are sent by e-mail.
+* http://tmpvar.com/markdown.html
+* Make CODING.md markdown.
+* Add manpage.
+
+* Fix the new-server-creation property/allowed checks.
+
+* Add more property functions:
+  - propdel
+  - propgetall (to disk)
+  - propsetall (from disk)
+
+* Add a templating system:
+  - ssl templates: bundle/pem/csr/key/crt
+  - company templates: kvk-nummer, btw-nummer, address
+  - ...
+  - ssh templates: private ssh keys + HOOKS to add/update the public keys on the remote system
+    (now we can use ssh -i instead of the password-hack)
+
+* Devise a way in the interface to mark users a non-writers.
+
+* Check that the schema.sql is still up to date.
+* Check that https with bad cert gets a warning/error.
+
+
+=INTERFACE=
+
+* Make args [object] [property] without command equal -pg.
+
+* Make -pe and -ps work even though no object existed yet.
+
+
+=SSH HACKS=
+
+* Make it easier to install the ssh hacks.
+
+* For the ssh auto-login: modify pstore to act as ssh_askpass when invoked
+  with SSH_PASSWORD in the environment.
+
+* For the ssh auto-login hack: add another env var with completely random
+  rot-N digits. That way we can store a randomized password on-disk:
+  the SSH_RANDOM environment will be completely random (and useless) and the
+  password which is very briefly written to disk will be obfuscated (pretty
+  unusable without SSH_RANDOM).
+
+
+=LATER OR NOT=
+
+* Use READ_COMMITTED serialization. We can use that to abort when multiple users
+  are attempting to modify the same objects at the same time. (TESTME?)
+
+* Make it easier to install the bash_completion script (and/or complement the
+  INSTALL).
+
+* Make it easier for people to update their public key? Or describe how one can
+  do it effectively in the FAQ.
+
+* Ensure that we cannot get races when someone uploads a new public key
+  and we upload a new password: have a check on at-password-upload-time
+  that checks the created/modified time of all relevant publickey objects.
