@@ -75,7 +75,6 @@ _testtodo:
 
 pstore-dist: isclean README.rst
 	# sdist likes a setup.py
-	# TODO: add dev-r1234 style version numbers to package?
 	cat setups.py | sed -e "/^if __name__ == '__main__':/,\$$d" > setup.py
 	echo 'setup_pstore()' >> setup.py
 	# sdist likes a reStructuredText README.txt 
@@ -89,7 +88,6 @@ pstore-dist: isclean README.rst
 
 django-pstore-dist: isclean README.rst
 	# sdist likes a setup.py
-	# TODO: add dev-r1234 style version numbers to package?
 	cat setups.py | sed -e "/^if __name__ == '__main__':/,\$$d" > setup.py
 	echo 'setup_django_pstore()' >> setup.py
 	# sdist likes a reStructuredText README.txt 
@@ -113,4 +111,5 @@ dummy:
 	# pandoc does its tricks nicely. But we need to tweak it a little bit.
 	sh -c 'pandoc $< -t rst | sed -e "s/ <#[^> ]*>//g;3s/^$$/\n(_\`back to top\`)/" > $@'
 	# PyPI does not like warnings/errors
+	# (get rst2html from python-docutils)
 	sh -c 'rst2html $@ --no-raw --strict >/dev/null || ( rm -f $@; false )'
