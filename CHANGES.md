@@ -3,10 +3,12 @@ pstore :: Python Protected Password Store
 
 The list of changes.
 
+????-??-??: 0.96.1dev
+---------------------
+ * Move to github.
 
 2013-07-31: 0.96
------------------
-
+----------------
  * Fix bug with stdin not ending after a single CTRL+D.
  * Improve readability of Markdown files.
  * Clean up documentation, fix unit tests.
@@ -16,9 +18,7 @@ The list of changes.
  * Take version info from the CHANGES.md.
  * Use a single version number all over the project.
 
-
 2013-04-15: 0.95rc4
 -------------------
-
  * There was no changelog.
  * vim: set syntax=markdown tw=72:
