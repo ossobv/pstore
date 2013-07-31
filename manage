@@ -58,12 +58,6 @@ elif [ "$arg1" = "flushall" ]; then
 	    yes "`printf 'yes\nno'`" | $django_admin flush --settings="$settings" &&
 	    $django_admin loaddata example_data --settings="$settings"
 	    echo 'Imported example_data!'
-elif [ "$arg1" = "makepkg" ]; then
-    filename="$projectpath/../pstore-svn`svnversion $projectpath`-`date +%y%m%d`.tar.gz"
-    echo -n "Creating $filename... "
-    tar zcf "$filename" --transform "s/^\./pstore-svn`svnversion "$projectpath"`/" \
-	`find . -type f -not -name '*.pyc' -not -path '*/.svn/*' -not -name pstore_db -not -name site_settings.py`
-    echo done
 # Run the regular commands
 else
     $django_admin "$arg1" --settings="$settings" "$@"

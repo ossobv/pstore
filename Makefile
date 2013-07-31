@@ -16,7 +16,7 @@ isclean:
 	# If there are, you should clean it up.
 	# (We check this, because the setup.py will include every .py it finds
 	# due to its find_package_module() function.)
-	! (svn status 2>/dev/null || true) | grep '^?.*py$$'
+	! (git status | sed -e '1,/^# Untracked/d;/^#\t.*\.py$$/!d;s/^#\t/Untracked: /' | grep .)
 	# These files should be created AND removed by the *-dist rules.
 	test ! -f README.txt
 	test ! -f setup.py
@@ -70,9 +70,7 @@ testtodo: _testtodo
 
 _testtodo:
 	@printf '\n** COUNTING TO-DO MARKS **\n\n'
-	find . -type f -not -path '*/.svn/*' -and -not -path './pkg/*' -and -not -name '*.pyc' \
-		-and -not -name '*.swp' -and -not -name Makefile \
-		| xargs egrep 'XXX|TODO|FIXME' | sed -e 's/:.*//' | uniq -c | sort -nr
+	git ls-files | grep -vF Makefile | xargs egrep 'XXX|TODO|FIXME' | sed -e 's/:.*//' | uniq -c | sort -nr
 	@echo
 
 pstore-dist: isclean README.rst
@@ -107,7 +105,7 @@ pstore-full: dist/pstore-full-latest.tar.gz
 
 dist/pstore-full-latest.tar.gz: dummy
 	# Add all files to a single archive (always)
-	sh -c 'tar zcf dist/pstore-full-latest.tar.gz `svn ls -R | while read x; do [ -f $$x ] && echo $$x; done`'
+	tar zcf dist/pstore-full-latest.tar.gz --no-recursion `git ls-files`
 
 dummy:
 
