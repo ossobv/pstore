@@ -135,7 +135,9 @@ class GPGCrypt(object):
 
     def get_key(self, **kwargs):
         """
-        Get the appropriate key to work with. XXX: fix docs
+        Get the appropriate key to work with.
+
+        Takes either an id= or an email= argument.
 
         TODO: if the key is not found, get it from server?
         """

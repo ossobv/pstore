@@ -56,8 +56,8 @@ defaults = {
     'version': version,
     'author': 'Walter Doekes',
     'author_email': 'wjdoekes+pstore@osso.nl',
-    'url': 'https://code.osso.nl/projects/pstore/',           # FIXME
-    'download_url': 'https://code.osso.nl/projects/pstore/',  # FIXME
+    'url': 'https://github.com/ossobv/pstore#jump',
+    'download_url': 'https://code.osso.nl/projects/pstore/',
     'license': 'LGPLv3',
     'long_description': long_description,
     'classifiers': [
@@ -118,7 +118,6 @@ def setup_django_pstore():
             'templates/*.html',
         ]},
         install_requires=['Django>=1.3,<1.5', 'pstore'],
-        #dependency_links = [...],  # FIXME: pstore package url here..
 
         description='Python Protected Password Store server application',
         keywords='password encrypted sharing cli',
