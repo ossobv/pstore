@@ -1,7 +1,7 @@
 pstore :: Python Protected Password Store
 =========================================
 
-Quick jump: <a id="jump"></a>
+Quick jump: <a id="jump" name="jump"></a>
             [File layout](#filelayout) |
             [Makefile](#makefile) |
             [FAQ/Notes](#faqnotes)
@@ -9,8 +9,8 @@ Quick jump: <a id="jump"></a>
 This is a developer document. This documents still needs some live.
 
 
-File layout <a id="filelayout"></a>
------------------------------------
+File layout <a id="filelayout" name="filelayout"></a>
+-----------------------------------------------------
 
     Path              | Description
     ------------------+------------
@@ -33,8 +33,8 @@ File layout <a id="filelayout"></a>
     TODO              | A list of items to do.
 
 
-Makefile <a id="makefile"></a>
-------------------------------
+Makefile <a id="makefile" name="makefile"></a>
+----------------------------------------------
 
     # Clean project dir
     make clean
@@ -47,8 +47,8 @@ Makefile <a id="makefile"></a>
     make test
 
 
-FAQ/Notes <a id="faqnotes"></a>
--------------------------------
+FAQ/Notes <a id="faqnotes" name="faqnotes"></a>
+-----------------------------------------------
 
 ### Why do we use both multipart form uploads and binary downloads and json objects?
 

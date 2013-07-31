@@ -13,8 +13,8 @@ the command line interface, so the server never sees your unencrypted
 passwords.
 
 
-Summary <a id="summary"></a>
-----------------------------
+Summary <a id="summary" name="summary"></a>
+-------------------------------------------
 
 ([back to top](#jump))
 
@@ -34,8 +34,8 @@ the pstore server. After that you're ready to go.
 everyone keeping them private.
 
 
-Usage examples <a id="usage"></a>
----------------------------------
+Usage examples <a id="usage" name="usage"></a>
+----------------------------------------------
 
 ([back to top](#jump))
 
@@ -87,7 +87,7 @@ See the `contrib` directory for bash completion scripts and a *dirty hack* to
 supply the password to the *ssh* client automatically.
 
 
-Installation <a id="install"></a>
+Installation <a id="install" name="install"></a>
 ---------------------------------
 
 ([back to top](#jump))
@@ -163,8 +163,8 @@ You're ready to go. Call the pstore client with `--help` and
 `--help --verbose` for more help and tips.
 
 
-FAQ <a id="faq"></a>
---------------------
+FAQ <a id="faq" name="faq"></a>
+-------------------------------
 
 ([back to top](#jump))
 
