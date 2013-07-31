@@ -272,3 +272,6 @@ permissions in /tmp.
 
 Further, you may need to increase the `max_allowed_packet` to something higher
 than `16MB` if you want to store larger files.
+
+
+([back to top](#jump))
