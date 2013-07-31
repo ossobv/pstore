@@ -3,8 +3,8 @@ pstore :: Python Protected Password Store
 
 The list of changes.
 
-????-??-??: 0.96.1dev
----------------------
+2013-07-31: 1.0rc1
+------------------
  * Move to github.
 
 2013-07-31: 0.96
