@@ -27,7 +27,12 @@ from distutils.version import LooseVersion  # strict is too ~, even for me
 
 # TODO: add readme/manpage?
 
-from pstorelib import VERSION_STRING
+try:
+    # When installing the django-pstore package before the pstore package, this
+    # would fail. 
+    from pstorelib import VERSION_STRING
+except ImportError:
+    VERSION_STRING = None
 
 
 with open('CHANGES.md') as file:
@@ -43,11 +48,13 @@ with open('CHANGES.md') as file:
         low = matches[i]
         assert high > low, ('CHANGES.md version order mismatch: %r <= %r' %
                             (high, low))
-    # Double check that the last version equals the version in the pstorelib
-    assert matches[0] == VERSION_STRING, ('pstorelib version does not match '
-                                          'CHANGES.md')
+    # Double check that the last version equals the version in the pstorelib,
+    # if pstorelib is installed already.
+    if VERSION_STRING:
+        assert matches[0] == VERSION_STRING, ('pstorelib version does not '
+                                              'match CHANGES.md')
     # Fetch "current" version
-    version = VERSION_STRING
+    version = str(matches[0])
 
 with open('README.txt') as file:
     long_description = file.read()
@@ -165,8 +172,10 @@ build_py.find_package_modules = find_package_modules
 # `setup_pstore` or to `setup_django_pstore`.
 if __name__ == '__main__':
     import sys
-    which = sys.argv[1]
-    sys.argv.pop(1)
+    try:
+        which = sys.argv.pop(1)
+    except IndexError:
+        which = None
     if which == 'django-pstore':
         setup_django_pstore()
     elif which == 'pstore':
