@@ -4,8 +4,8 @@ pstore :: Python Protected Password Store
 The list of changes.
 
 
-????-??-??: 1.0.1a
-------------------
+2013-08-02: 1.0.1
+-----------------
  * Fix so django-pstore can be installed without having to install
    pstore first.
 
