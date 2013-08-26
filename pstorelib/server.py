@@ -197,9 +197,9 @@ class Backend(object):
         out = [('nonce_b64', self.newnonce())] + [('q', i) for i in users]
         userdata = self._communicate(path, query=out)
         if set(users) != set(userdata.keys()):
-            raise self.NotFound('did not receive same list of users: '
-                                'got only "%s"; do the others exist?' %
-                                (', '.join(userdata.keys()),))
+            raise NotFound('did not receive same list of users: '
+                           'got only "%s"; do the others exist?' %
+                           (', '.join(userdata.keys()),))
 
         # Reduce dictionary to a set of keys.
         ret = {}
