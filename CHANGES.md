@@ -8,6 +8,10 @@ The list of changes.
 -----------------
  * Fix bad exception thrown when trying to add non-existent users.
    Reported by Herman :)
+ * Escape slashes in URLs not with the regular percent-encoding but
+   with an equals sign instead. This was needed because the WSGI spec
+   does not provide a compatible way to read the escaped URI. Now you
+   can use slashes in object identifiers and property names again.
 
 2013-08-02: 1.0.1
 -----------------

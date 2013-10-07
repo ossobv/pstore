@@ -25,6 +25,7 @@ from django.contrib.auth.models import User
 from django.db import models
 from django.db.models.signals import pre_delete
 from django.utils.translation import ugettext_lazy as _
+
 from pstorelib.crypt import encrypts
 
 from pstore.db import Model, AsciiField, BlobField

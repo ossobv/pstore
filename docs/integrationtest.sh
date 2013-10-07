@@ -500,7 +500,7 @@ fi
 
 begintest 'Adding machine name with slash in it' ----------------------
 #
-call="$pstore -c abc/def -ualex"
+call="$pstore -c abc/def=123 -ualex"
 if ! printf 'With a slash' | $call; then
     failtest 'could not add public property'
 else
@@ -510,7 +510,7 @@ fi
 
 begintest 'Adding property with slash in it' --------------------------
 #
-call="$pstore test.example.com -ualex -ps abc/def"
+call="$pstore test.example.com -ujoe -ps abc/def=123"
 if ! printf 'With a slash' | $call; then
     failtest 'could not add public property'
 else

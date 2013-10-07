@@ -20,6 +20,7 @@ Copyright (C) 2010,2012,2013  Walter Doekes <wdoekes>, OSSO B.V.
 """
 from django.contrib import admin
 from django.contrib.auth.models import User
+
 from pstore.models import Object, ObjectPerm, Property, PublicKey
 
 try:

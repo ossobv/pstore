@@ -30,6 +30,7 @@ from django.shortcuts import get_object_or_404
 from django.views.decorators.http import require_POST
 
 from pstorelib.bytes import BytesIO
+from pstorelib.server import urlunquote
 
 from pstore.decorators import audit_view
 from pstore.http import EncryptedResponse, VoidResponse
@@ -138,6 +139,10 @@ def get_property(request, user, object_identifier, property_name):
     # Query strings:
     u = request.GET.get('u', None)  # filter by user
 
+    # Decode object_identifier and property_name:
+    object_identifier = urlunquote(object_identifier)
+    property_name = urlunquote(property_name)
+
     # Query:
     qs = Property.objects.filter(
         object__identifier=object_identifier,
@@ -187,6 +192,10 @@ def set_property(request, user, object_identifier, property_name):
         raise NotImplementedError('Unexpected GET args', request.GET)
     if len(request.POST) != 1:  # nonce was here..
         raise NotImplementedError('Unexpected POST args', request.POST)
+
+    # Docode URI arguments.
+    object_identifier = urlunquote(object_identifier)
+    property_name = urlunquote(property_name)
 
     # Which users?
     usernames = [i.name for i in request.FILES.getlist(property_name)]
@@ -271,6 +280,9 @@ def update_properties(request, user, object_identifier):
         raise NotImplementedError('Unexpected GET args', request.GET)
     if len(request.POST) != 1:  # only the nonce_b64 should be here
         raise NotImplementedError('Unexpected POST args', request.POST)
+
+    # Decode object_identifier:
+    object_identifier = urlunquote(object_identifier)
 
     # Check authorization and existence:
     if user.has_perm('pstore.view_any_object'):

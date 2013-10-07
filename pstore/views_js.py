@@ -25,6 +25,8 @@ from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
 
+from pstorelib.server import urlunquote
+
 from pstore.decorators import audit_view
 from pstore.models import Object, PublicKey, Property
 from pstore.security import (get_object_or_403, require_GET_nonce,
@@ -43,6 +45,9 @@ def get_object(request, user, object_identifier):
     """
     # Query strings:
     u = request.GET.get('u', None)
+
+    # Decode object_identifier.
+    object_identifier = urlunquote(object_identifier)
 
     # Check authorization and existence:
     if user.has_perm('object.view_any_object'):

@@ -26,7 +26,7 @@ from json import load as from_jsonfile
 from random import randint
 from socket import error as SocketError
 from sys import exc_info
-from urllib import quote, urlencode
+from urllib import quote, unquote, urlencode
 from urllib2 import Request, URLError, urlopen
 
 from pstorelib.crypt import CryptoReader
@@ -341,9 +341,25 @@ class MultiPartForm(object):
 def urlquote(param):
     """
     Encodes parameters for use in a path. That means that slashes get
-    encoded as %2F.
+    encoded as %2F. But then, we replace the percent sign with equals
+    signs. Because of the following issue:
+
+    http://lists.unbit.it/pipermail/uwsgi/2011-March/001621.html
+    > CGI spec says that PATH_INFO should be decoded
+    > WSGI says nothing, but as it does not mention REQUEST_URI as a
+    > standard variable we could have no way to determine (after
+    > decoding) if a / was a / or a %2F.
     """
-    return quote(param, safe='')
+    # Safe '' means that there are very few characters that do not get
+    # escaped.
+    return quote(param, safe='').replace('%', '=')
+
+
+def urlunquote(param):
+    """
+    Undo the doings of urlquote.
+    """
+    return unquote(param.replace('=', '%'))
 
 
 if __name__ == '__main__':
