@@ -55,7 +55,7 @@ def require_GET_nonce(func):
     @wraps(func, assigned=available_attrs(func))
     def inner(request, *args, **kwargs):
         if request.method != 'GET':
-            return HttpResponseNotAllowed()
+            return HttpResponseNotAllowed(['GET'])
         user = validate_nonce_b64(request.GET.get('nonce_b64'))
         return func(request, user, *args, **kwargs)
     return inner
@@ -75,7 +75,7 @@ def require_POST_nonce(func):
     @wraps(func, assigned=available_attrs(func))
     def inner(request, *args, **kwargs):
         if request.method != 'POST':
-            return HttpResponseNotAllowed()
+            return HttpResponseNotAllowed(['POST'])
         user = validate_nonce_b64(request.POST.get('nonce_b64'))
         return func(request, user, *args, **kwargs)
     return inner
