@@ -278,7 +278,7 @@ AK968N1Yrw+ytDuus3s7xPXYAw==
         <field to="pstore.object" name="object" rel="ManyToOneRel">2</field>
         <field type="CharField" name="name">description</field>
         <field type="PositiveSmallIntegerField" name="type">1</field>
-        <field type="BlobField" name="value">RGVzY3JpcHRpb24K</field>
+        <field type="BlobField" name="value">RGVzY3JpcHRpb24=</field>
         <field to="auth.user" name="user" rel="ManyToOneRel"><None></None></field>
     </object>
 </django-objects>
