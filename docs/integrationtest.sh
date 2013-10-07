@@ -1,7 +1,7 @@
 #!/bin/bash
 # vim: set ts=8 sw=4 sts=4 et ai tw=71:
-FAILFAST=   # set to non-empty to exit immediately
-SKIPLARGE=  # set to non-empty to skip largefile tests
+FAILFAST=1  # set to non-empty to exit immediately
+SKIPLARGE=1 # set to non-empty to skip largefile tests
 
 # If you want to run the server yourself, specify the store-url on the
 # command line.
@@ -493,6 +493,26 @@ begintest 'Fail checking password as disallowed user' -----------------
 call="$pstore test.example.com -ualex"
 if $call 2>/dev/null; then
     failtest 'succeeded, should not'
+else
+    endtest
+fi
+
+
+begintest 'Adding machine name with slash in it' ----------------------
+#
+call="$pstore -c abc/def -ualex"
+if ! printf 'With a slash' | $call; then
+    failtest 'could not add public property'
+else
+    endtest
+fi
+
+
+begintest 'Adding property with slash in it' --------------------------
+#
+call="$pstore test.example.com -ualex -ps abc/def"
+if ! printf 'With a slash' | $call; then
+    failtest 'could not add public property'
 else
     endtest
 fi
