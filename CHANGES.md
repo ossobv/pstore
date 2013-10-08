@@ -7,6 +7,7 @@ The list of changes.
 ????-??-??: 1.0.3a
 ------------------
  * Messages to auth.log get a proper prefix.
+ * Attempt to fix the problem of people running out of nonces.
 
 2013-10-08: 1.0.2
 -----------------

@@ -21,63 +21,62 @@ Copyright (C) 2012,2013  Walter Doekes <wdoekes>, OSSO B.V.
 from functools import wraps
 from logging import getLogger
 
+from django.contrib.auth.decorators import user_passes_test
+from django.core.exceptions import PermissionDenied
 from django.utils.decorators import available_attrs
 
 
 logger = getLogger('pstore.audit')
 
 
-def audit_view(description, takes_user=True, mutates=False):
+def audit_view(description, mutates=False):
     """
     Decorator to log the calling of this view.  Usage::
 
-        @require_POST_nonce
+        @nonce_required
+        @require_POST
         @audit_view('bakes pizza', mutates=True)
         def baking_pizza_view(request, user):
             # ...
     """
-    if takes_user:
-        def decorator(func):
-            @wraps(func, assigned=available_attrs(func))
-            def inner(request, user, *args, **kwargs):
-                humanargs = ', '.join(list(args) +
-                                      ['%s=%s' % (k, v)
-                                       for k, v in kwargs.items()])
-                address = str(request.META.get('REMOTE_ADDR', 'UNKNOWN_IP'))
-                message = (u'User %s on %s %s %s' %
-                           (user.username, address, description, humanargs))
+    def decorator(func):
+        @wraps(func, assigned=available_attrs(func))
+        def inner(request, *args, **kwargs):
+            if request.user.is_anonymous():
+                username = 'ANONYMOUS'
+            else:
+                username = request.user.username
+            humanargs = ', '.join(list(args) +
+                                  ['%s=%s' % (k, v)
+                                   for k, v in kwargs.items()])
+            address = str(request.META.get('REMOTE_ADDR', 'UNKNOWN_IP'))
+            message = (u'User %s on %s %s %s' %
+                       (username, address, description, humanargs))
 
-                if mutates:
-                    # Use 'warning' as there is no 'notice' level. And encode
-                    # as UTF-8 because the automatic encoding would add a BOM
-                    # before the message. See:
-                    # http://serverfault.com/questions/407643/
-                    #       rsyslog-update-on-amazon-linux-suddenly-treats-
-                    #       info-level-messages-as-emerg
-                    logger.warning(message.encode('utf-8'))
-                else:
-                    logger.info(message.encode('utf-8'))
+            if mutates:
+                # Use 'warning' as there is no 'notice' level. And encode
+                # as UTF-8 because the automatic encoding would add a BOM
+                # before the message. See:
+                # http://serverfault.com/questions/407643/
+                #       rsyslog-update-on-amazon-linux-suddenly-treats-
+                #       info-level-messages-as-emerg
+                logger.warning(message.encode('utf-8'))
+            else:
+                logger.info(message.encode('utf-8'))
 
-                return func(request, user, *args, **kwargs)
-            return inner
-
-    else:
-        def decorator(func):
-            @wraps(func, assigned=available_attrs(func))
-            def inner(request, *args, **kwargs):
-                humanargs = ', '.join(list(args) +
-                                      ['%s=%s' % (k, v)
-                                       for k, v in kwargs.items()])
-                address = str(request.META.get('REMOTE_ADDR', 'UNKNOWN_IP'))
-                message = (u'User %s on %s %s %s' %
-                           ('UNKNOWN_USER', address, description, humanargs))
-
-                if mutates:
-                    logger.warning(message.encode('utf-8'))
-                else:
-                    logger.info(message.encode('utf-8'))
-
-                return func(request, *args, **kwargs)
-            return inner
+            return func(request, *args, **kwargs)
+        return inner
 
     return decorator
+
+
+def is_logged_in_with_nonce(user):
+    """
+    Raises a 403 error in case the user is not logged in.
+    """
+    if user.is_anonymous():
+        raise PermissionDenied('User is not logged in')
+    if not user.used_nonce:
+        raise PermissionDenied('User did not log in with a nonce')
+    return True
+nonce_required = user_passes_test(is_logged_in_with_nonce)

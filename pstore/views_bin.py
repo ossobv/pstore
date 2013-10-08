@@ -27,16 +27,15 @@ from django.db import connection
 from django.db.models import Q
 from django.http import Http404
 from django.shortcuts import get_object_or_404
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_GET, require_POST
 
 from pstorelib.bytes import BytesIO
 from pstorelib.server import urlunquote
 
-from pstore.decorators import audit_view
+from pstore.decorators import audit_view, nonce_required
 from pstore.http import EncryptedResponse, VoidResponse
 from pstore.models import Nonce, Object, ObjectPerm, Property
-from pstore.security import (get_object_or_403, require_GET_nonce,
-                             require_POST_nonce)
+from pstore.security import get_object_or_403
 
 
 # NOTE: If the user is a superuser, the results to certain lookups will be 200
@@ -100,8 +99,9 @@ def create_property(object, property, file, user):
             cursor.close()
 
 
+# NOT nonce_required.. obviously..
 @require_POST
-@audit_view('creates nonce', takes_user=False)
+@audit_view('creates nonce')
 def create_nonce(request):
     """
     One of the few views that does not require a valid nonce.
@@ -133,9 +133,10 @@ def create_nonce(request):
                              enctype=user.publickey.key_type())
 
 
-@require_GET_nonce
+@nonce_required
+@require_GET
 @audit_view('reads single property')
-def get_property(request, user, object_identifier, property_name):
+def get_property(request, object_identifier, property_name):
     # Query strings:
     u = request.GET.get('u', None)  # filter by user
 
@@ -154,11 +155,11 @@ def get_property(request, user, object_identifier, property_name):
         qs = qs.filter(user=None)
 
     # Check authorization:
-    if user.has_perms('pstore.view_any_object'):
+    if request.user.has_perms('pstore.view_any_object'):
         pass
     elif not ObjectPerm.objects.filter(
         object__identifier=object_identifier,
-        user=user
+        user=request.user
     ).exists():
         raise PermissionDenied('Not staff and not permitted')
 
@@ -182,10 +183,11 @@ def get_property(request, user, object_identifier, property_name):
     return EncryptedResponse(fp=file, enctype=property.enctype())
 
 
-@require_POST_nonce
+@nonce_required
+@require_POST
 @audit_view('sets or replaces a property', mutates=True)
-def set_property(request, user, object_identifier, property_name):
-    author = user  # FIXME
+def set_property(request, object_identifier, property_name):
+    author = request.user  # FIXME
 
     # Check the rest of the arguments.
     if len(request.GET) != 0:
@@ -273,9 +275,10 @@ def set_property(request, user, object_identifier, property_name):
     return VoidResponse()
 
 
-@require_POST_nonce
+@nonce_required
+@require_POST
 @audit_view('updates properties and/or permissions', mutates=True)
-def update_properties(request, user, object_identifier):
+def update_properties(request, object_identifier):
     if len(request.GET) != 0:
         raise NotImplementedError('Unexpected GET args', request.GET)
     if len(request.POST) != 1:  # only the nonce_b64 should be here
@@ -285,14 +288,14 @@ def update_properties(request, user, object_identifier):
     object_identifier = urlunquote(object_identifier)
 
     # Check authorization and existence:
-    if user.has_perm('pstore.view_any_object'):
+    if request.user.has_perm('pstore.view_any_object'):
         obj = get_object_or_404(Object, identifier=object_identifier)
     else:
         obj = get_object_or_403(Object, identifier=object_identifier)
     try:
-        ObjectPerm.objects.get(object=obj, user=user, can_write=True)
+        ObjectPerm.objects.get(object=obj, user=request.user, can_write=True)
     except ObjectPerm.DoesNotExist:
-        raise PermissionDenied('No permissions for user', user)
+        raise PermissionDenied('No permissions for user', request.user)
 
     # Fetch users and do a few basic checks on them. Below, during the Property
     # create loop, we'll do some more checks.

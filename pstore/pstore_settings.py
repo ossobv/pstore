@@ -42,14 +42,17 @@ MIDDLEWARE_CLASSES = (
     #DJANGO1.4+#'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.middleware.common.CommonMiddleware',
 
-    # Makes sure we have a session for admin work.
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    # Attaches user to the request object.
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    # The admin interface needs this for feedback.
-    'django.contrib.messages.middleware.MessageMiddleware',
+    # Make sure we have a the requirements for admin work.
+    'django.contrib.sessions.middleware.SessionMiddleware',     # sessions
+    'django.contrib.auth.middleware.AuthenticationMiddleware',  # request.user
+    'django.contrib.messages.middleware.MessageMiddleware',     # UI feedback
 
-    # We want operations to be atomic!
+    # Authenticate users by nonce instead.
+    'pstore.middleware.AuthenticateByNonceMiddleware',
+
+    # We want operations to be atomic! But do this after the auth-nonce
+    # middleware so people won't run into the lack of nonces after they abuse
+    # the pstore client (resulting in 403/404s).
     'django.middleware.transaction.TransactionMiddleware',
 )
 

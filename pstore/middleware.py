@@ -23,6 +23,27 @@ import time
 from django.conf import settings
 from django.db import connection
 
+from pstore.security import validate_nonce_b64
+
+
+class AuthenticateByNonceMiddleware(object):
+    def process_request(self, request):
+        if request.method == 'GET':
+            nonce_b64 = request.GET.get('nonce_b64')
+        elif request.method == 'POST':
+            nonce_b64 = request.POST.get('nonce_b64')
+        else:
+            nonce_b64 = None
+
+        if nonce_b64:
+            assert not hasattr(request, '_cached_user')
+            request.user = validate_nonce_b64(nonce_b64)
+            request.user.used_nonce = True
+        else:
+            request.user.used_nonce = False
+
+        return None
+
 
 class LogSqlToConsoleMiddleware(object):
     """

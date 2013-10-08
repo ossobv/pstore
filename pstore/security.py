@@ -19,11 +19,9 @@ Copyright (C) 2012,2013  Walter Doekes <wdoekes>, OSSO B.V.
     USA.
 """
 from base64 import b64decode
-from functools import wraps
 
-from django.utils.decorators import available_attrs
 from django.core.exceptions import PermissionDenied
-from django.http import Http404, HttpResponseNotAllowed
+from django.http import Http404
 from django.shortcuts import get_object_or_404
 
 from pstore.models import Nonce
@@ -39,46 +37,6 @@ def get_object_or_403(*args, **kwargs):
     except Http404:
         raise PermissionDenied()
     return result
-
-
-def require_GET_nonce(func):
-    """
-    Decorator to make a view only accept GET requests with a nonce_b64
-    argument.  Usage::
-
-        @require_GET_nonce
-        def my_view(request, user):
-            # I can assume now that only GET requests make it this far
-            # and they've got an authenticated user too
-            # ...
-    """
-    @wraps(func, assigned=available_attrs(func))
-    def inner(request, *args, **kwargs):
-        if request.method != 'GET':
-            return HttpResponseNotAllowed(['GET'])
-        user = validate_nonce_b64(request.GET.get('nonce_b64'))
-        return func(request, user, *args, **kwargs)
-    return inner
-
-
-def require_POST_nonce(func):
-    """
-    Decorator to make a view only accept POST requests with a nonce_b64
-    argument.  Usage::
-
-        @require_POST_nonce
-        def my_view(request, user):
-            # I can assume now that only POST requests make it this far
-            # and they've got an authenticated user too
-            # ...
-    """
-    @wraps(func, assigned=available_attrs(func))
-    def inner(request, *args, **kwargs):
-        if request.method != 'POST':
-            return HttpResponseNotAllowed(['POST'])
-        user = validate_nonce_b64(request.POST.get('nonce_b64'))
-        return func(request, user, *args, **kwargs)
-    return inner
 
 
 def validate_nonce_b64(nonce_b64):

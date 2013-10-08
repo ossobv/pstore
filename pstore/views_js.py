@@ -24,19 +24,20 @@ from collections import defaultdict
 from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
+from django.views.decorators.http import require_GET
 
 from pstorelib.server import urlunquote
 
-from pstore.decorators import audit_view
+from pstore.decorators import audit_view, nonce_required
 from pstore.models import Object, PublicKey, Property
-from pstore.security import (get_object_or_403, require_GET_nonce,
-                             validate_nonce_b64)
+from pstore.security import get_object_or_403
 from pstore.xhr import JsonResponse
 
 
-@require_GET_nonce
+@nonce_required
+@require_GET
 @audit_view('reads object details')
-def get_object(request, user, object_identifier):
+def get_object(request, object_identifier):
     """
     Get a single object. You get verbose info.
 
@@ -50,9 +51,9 @@ def get_object(request, user, object_identifier):
     object_identifier = urlunquote(object_identifier)
 
     # Check authorization and existence:
-    if user.has_perm('object.view_any_object'):
+    if request.user.has_perm('object.view_any_object'):
         obj = get_object_or_404(Object, identifier=object_identifier)
-    elif u != user.username:
+    elif u != request.user.username:
         raise PermissionDenied()
     else:
         obj = get_object_or_403(Object, identifier=object_identifier)
@@ -61,9 +62,9 @@ def get_object(request, user, object_identifier):
     # all shared and public properties, but not the contents. At the bottom,
     # the shared properties are added if no user lookup was supplied.
     try:
-        obj.allowed.get(user=user)
+        obj.allowed.get(user=request.user)
     except ObjectDoesNotExist:
-        if not user.has_perm('object.view_any_object'):
+        if not request.user.has_perm('object.view_any_object'):
             raise PermissionDenied()
         is_allowed = False
     else:
@@ -135,9 +136,10 @@ def get_object(request, user, object_identifier):
     return JsonResponse(request, result)
 
 
-@require_GET_nonce
+@nonce_required
+@require_GET
 @audit_view('lists objects+info')
-def list_objects(request, user):
+def list_objects(request):
     # Query strings:
     q = request.GET.get('q', None)  # filter against identifier
     u = request.GET.get('u', None)  # filter against allowed (allow multiple?)
@@ -145,9 +147,9 @@ def list_objects(request, user):
 
     # Check authorization and existence:
     u = request.GET.get('u', None)
-    if user.has_perm('object.view_any_object'):
+    if request.user.has_perm('object.view_any_object'):
         pass
-    elif u != user.username:
+    elif u != request.user.username:
         raise PermissionDenied()
 
     # Query:
@@ -174,11 +176,10 @@ def list_objects(request, user):
     return JsonResponse(request, result)
 
 
-@require_GET_nonce
+@require_GET
+@nonce_required
 @audit_view('lists users+info')
-def list_users(request, user):
-    del user
-
+def list_users(request):
     # Query strings:
     q = request.GET.getlist('q')
 
@@ -200,10 +201,11 @@ def list_users(request, user):
     return JsonResponse(request, result)
 
 
-@require_GET_nonce
+@nonce_required
+@require_GET
 @audit_view('validates db consistency')
-def validate(request, user):
-    if not user.has_perm('object.view_any_object'):
+def validate(request):
+    if not request.user.has_perm('object.view_any_object'):
         raise PermissionDenied()
 
     tpub, tshar = Property.TYPE_PUBLIC, Property.TYPE_SHARED

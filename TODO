@@ -3,6 +3,11 @@ List of items to do
 
 * Need to get rid of the INFO/NOTICE messages..
 
+* Document that the admin interface uses CSRF protection even though we
+  don't use the middleware.
+* Document that the session does not get created unless "needed", so we
+  don't need a @session_exempt.
+
 * Make revoking permissions more efficient.
 * Make adding permissions more efficient (only add 1).
 
