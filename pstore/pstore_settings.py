@@ -93,6 +93,11 @@ LOGGING = {
             '()': RequireDebugFalse,
         }
     },
+    'formatters': {
+        'syslog': {
+            'format': 'uwsgi[%(process)d]: %(name)s: %(message)s',
+        },
+    },
     'handlers': {
         'mail_admins': {
             'level': 'ERROR',
@@ -103,6 +108,7 @@ LOGGING = {
             'level': 'INFO',
             'class': 'logging.handlers.SysLogHandler',
             'address': '/dev/log',  # don't forget this for sysloghandler
+            'formatter': 'syslog',
             'facility': SysLogHandler.LOG_AUTH,
         },
     },
