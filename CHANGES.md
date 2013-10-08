@@ -8,6 +8,8 @@ The list of changes.
 ------------------
  * Messages to auth.log get a proper prefix.
  * Attempt to fix the problem of people running out of nonces.
+ * Shave 50% off the time of the regular listing by reducing the amount
+   of queries.
 
 2013-10-08: 1.0.2
 -----------------

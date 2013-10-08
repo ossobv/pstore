@@ -21,6 +21,7 @@ Copyright (C) 2012,2013  Walter Doekes <wdoekes>, OSSO B.V.
 from base64 import b64encode
 from collections import defaultdict
 
+from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
@@ -29,7 +30,7 @@ from django.views.decorators.http import require_GET
 from pstorelib.server import urlunquote
 
 from pstore.decorators import audit_view, nonce_required
-from pstore.models import Object, PublicKey, Property
+from pstore.models import Object, ObjectPerm, PublicKey, Property
 from pstore.security import get_object_or_403
 from pstore.xhr import JsonResponse
 
@@ -161,17 +162,26 @@ def list_objects(request):
 
     # Result:
     if v:
+        # Listify.
+        qs = list(qs.values_list('id', 'identifier'))
+        # Fetch the related allow lists in a single query.
+        allowed = ObjectPerm.objects.filter(object__id__in=[i[0] for i in qs])
+        allowed = list(allowed.values_list('object', 'user', 'can_write'))
+        users = User.objects.filter(id__in=set([i[1] for i in allowed]))
+        # Dictify.
+        users = dict(users.values_list('id', 'username'))
+        allowed_dict = defaultdict(dict)
+        for object_id, user_id, can_write in allowed:
+            allowed_dict[object_id][users[user_id]] = {'can_write': can_write}
+        # Combine.
         result = {}
-        for object in qs:
-            allowed = object.allowed.select_related('user')
-            users = dict((i.user.username, {'can_write': i.can_write})
-                         for i in allowed)
-
+        for object_id, identifier in qs:
             # Only add the user allow-list to the all-objects listing. If you
             # want property details, use single-object lookups.
-            result[object.identifier] = {'users': users}
+            result[identifier] = {'users': allowed_dict[object_id]}
     else:
-        result = dict((i.identifier, True) for i in qs)
+        result = dict((i, True)
+                      for i in qs.values_list('identifier', flat=True))
 
     return JsonResponse(request, result)
 
