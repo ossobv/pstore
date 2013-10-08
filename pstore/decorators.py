@@ -42,16 +42,17 @@ def audit_view(description, mutates=False):
     def decorator(func):
         @wraps(func, assigned=available_attrs(func))
         def inner(request, *args, **kwargs):
-            if request.user.is_anonymous():
-                username = 'ANONYMOUS'
-            else:
-                username = request.user.username
             humanargs = ', '.join(list(args) +
                                   ['%s=%s' % (k, v)
                                    for k, v in kwargs.items()])
             address = str(request.META.get('REMOTE_ADDR', 'UNKNOWN_IP'))
-            message = (u'User %s on %s %s %s' %
-                       (username, address, description, humanargs))
+            if request.user.is_anonymous():
+                message = (u'Anonymous user on %s %s %s' %
+                           (address, description, humanargs))
+            else:
+                username = request.user.username.replace(' ', '_')
+                message = (u'User %s on %s %s %s' %
+                           (username, address, description, humanargs))
 
             if mutates:
                 # Use 'warning' as there is no 'notice' level. And encode
