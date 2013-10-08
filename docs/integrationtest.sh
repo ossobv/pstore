@@ -1,7 +1,7 @@
 #!/bin/bash
 # vim: set ts=8 sw=4 sts=4 et ai tw=71:
-FAILFAST=1  # set to non-empty to exit immediately
-SKIPLARGE=1 # set to non-empty to skip largefile tests
+FAILFAST=   # set to non-empty to exit immediately
+SKIPLARGE=  # set to non-empty to skip largefile tests
 
 # If you want to run the server yourself, specify the store-url on the
 # command line.
