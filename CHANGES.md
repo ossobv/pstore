@@ -10,6 +10,8 @@ The list of changes.
  * Attempt to fix the problem of people running out of nonces.
  * Shave 50% off the time of the regular listing by reducing the amount
    of queries.
+ * Don't send out properties over the mail (after deletion) even if they
+   are encrypted. Log them in the admin log instead.
 
 2013-10-08: 1.0.2
 -----------------

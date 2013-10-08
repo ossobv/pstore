@@ -21,9 +21,12 @@ Copyright (C) 2013  Walter Doekes <wdoekes>, OSSO B.V.
 from base64 import b64encode
 from email.Utils import formataddr
 
+from django.contrib.admin.models import DELETION, LogEntry
+from django.contrib.contenttypes.models import ContentType
 from django.conf import settings
 from django.core.mail import send_mail
 from django.db.models import Q
+from django.utils.encoding import force_unicode
 
 
 def collect_object_info(property_qs, user):
@@ -106,6 +109,22 @@ def notify_object_deletion(object):
         body.extend(collect_object_info(property_qs=object.properties,
                                         user=user))
         flatbody = '\n'.join(body)
+
+        # Write an admin log entry for every individual user and store
+        # the flatbody there. We don't want it mailed to an insecure
+        # location if we can help it.
+        entry = LogEntry.objects.create(
+            user=user,  # NOTE: not the *deleting* user
+            content_type=ContentType.objects.get_for_model(object),
+            object_id=object.pk,
+            object_repr=force_unicode(object),
+            action_flag=DELETION,
+            change_message=flatbody
+        )
+
+        flatbody = ('Object %s was deleted from the pstore!\n\n'
+                    'Details about removed properties can be found in '
+                    'the admin log %d.\n' % (object.identifier, entry.id))
 
         # Send out a mail.
         if settings.DEBUG:
@@ -196,6 +215,21 @@ def notify_user_deletion(user, publickey, objects):
         body.extend(collect_object_info(property_qs=object.properties,
                                         user=user))
     flatbody = '\n'.join(body)
+
+    # Do we have an admin log? Then store the flatbody there. We don't
+    # want it mailed to an insecure location if we can help it.
+    ct = ContentType.objects.get_for_model(user)
+    try:
+        entry = LogEntry.objects.get(content_type=ct, object_id=user.id,
+                                     action_flag=DELETION)
+    except LogEntry.DoesNotExist:
+        entry = None
+    else:
+        entry.change_message += flatbody
+        entry.save()
+        flatbody = ('User %s was deleted from the pstore!\n\n'
+                    'Details about removed objects can be found in the admin '
+                    'log %d.\n' % (user.username, entry.id))
 
     # Send out a mail.
     if settings.DEBUG:
