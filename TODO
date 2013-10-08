@@ -3,6 +3,9 @@ List of items to do
 
 * Need to get rid of the INFO/NOTICE messages..
 
+* If a response returns 500, we should redo the nonce request on the other
+  server too, right?
+
 * Document that the admin interface uses CSRF protection even though we
   don't use the middleware.
 * Document that the session does not get created unless "needed", so we
