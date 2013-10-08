@@ -12,6 +12,8 @@ The list of changes.
    with an equals sign instead. This was needed because the WSGI spec
    does not provide a compatible way to read the escaped URI. Now you
    can use slashes in object identifiers and property names again.
+ * Remove a single trailing line feed if input comes from a TTY. Add
+   a single trailing line feed if output goes to a TTY.
 
 2013-08-02: 1.0.1
 -----------------

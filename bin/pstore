@@ -166,6 +166,12 @@ class PStoreInterface(object):
         current list of allowed users. If the object doesn't exist,
         allowed_users should be a list of usernames.
         """
+        if fp.isatty():
+            # When people enter stuff on the command line, they are used to
+            # adding a line feed. Even though that shouldn't be in the value.
+            # Remove it.
+            fp = FileWithoutTrailingEnter(fp)
+
         if allowed_users:
             if allowed_users is True:
                 # Fetch the currently allowed users list.
@@ -200,6 +206,37 @@ class PStoreInterface(object):
 
     def validate(self):
         return self.backend.validate()
+
+
+class FileWithoutTrailingEnter(object):
+    def __init__(self, fp):
+        self.fp = fp
+        self.buf = ''
+        self.eof = False
+
+    def read(self, size=-1):
+        if size != -1:
+            raise NotImplementedError()
+        if self.eof:
+            return ''
+
+        data = self.fp.read(size)
+        if not data:
+            self.eof = True
+            if not self.buf:
+                return ''
+
+        ret = ''.join([self.buf, data])
+        if not ret.endswith('\n'):
+            self.buf = ''
+        else:
+            if ret.endswith('\r\n'):
+                self.buf = '\r\n'
+            else:
+                self.buf = '\n'
+            ret = ret[0:-len(self.buf)]
+
+        return ret
 
 
 def parse_pstorerc():
@@ -438,6 +475,10 @@ def run_command(command, args, config):
         # Use a sendfile(2) compatible call to push everything from the fp to
         # stdout.
         sendfile(sys.stdout, fp)
+        # We dropped the last line feed on input from a TTY. So, if the output
+        # is a tty too, we'll add the LF again.
+        if sys.stdout.isatty():
+            sys.stdout.write('\n')
 
     elif command == 'proplist':
         allowed_only = (not config['show_all'])

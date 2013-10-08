@@ -3,9 +3,6 @@ List of items to do
 
 * Need to get rid of the INFO/NOTICE messages..
 
-* Fix human i/o:
-  - isatty: strip enter after input, add enter after output :)
-
 * Make revoking permissions more efficient.
 * Make adding permissions more efficient (only add 1).
 
