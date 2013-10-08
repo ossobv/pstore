@@ -4,7 +4,7 @@ pstore :: Python Protected Password Store
 The list of changes.
 
 
-????-??-??: 1.0.2a
+2013-10-08: 1.0.2
 -----------------
  * Fix bad exception thrown when trying to add non-existent users.
    Reported by Herman :)
