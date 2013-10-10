@@ -4,14 +4,15 @@ pstore :: Python Protected Password Store
 The list of changes.
 
 
-????-??-??: 1.0.3a
-------------------
+2013-10-10: 1.0.3
+-----------------
  * Messages to auth.log get a proper prefix.
  * Attempt to fix the problem of people running out of nonces.
  * Shave 50% off the time of the regular listing by reducing the amount
    of queries.
  * Don't send out properties over the mail (after deletion) even if they
    are encrypted. Log them in the admin log instead.
+ * Fix so we can encrypt new properties. Version 1.0.2 is broken.
 
 2013-10-08: 1.0.2
 -----------------

@@ -28,7 +28,7 @@ from getpass import getpass, getuser
 from tempfile import mktemp
 
 from pstorelib import VERSION_STRING
-from pstorelib.bytes import BytesIO, sendfile
+from pstorelib.bytes import BytesIO, FileWithoutTrailingEnter, sendfile
 from pstorelib.crypt import PStoreCrypt, CryptoWriter
 from pstorelib.exceptions import (PStoreException, UserError, NotAllowed,
                                   NotFound)
@@ -206,37 +206,6 @@ class PStoreInterface(object):
 
     def validate(self):
         return self.backend.validate()
-
-
-class FileWithoutTrailingEnter(object):
-    def __init__(self, fp):
-        self.fp = fp
-        self.buf = ''
-        self.eof = False
-
-    def read(self, size=-1):
-        if size != -1:
-            raise NotImplementedError()
-        if self.eof:
-            return ''
-
-        data = self.fp.read(size)
-        if not data:
-            self.eof = True
-            if not self.buf:
-                return ''
-
-        ret = ''.join([self.buf, data])
-        if not ret.endswith('\n'):
-            self.buf = ''
-        else:
-            if ret.endswith('\r\n'):
-                self.buf = '\r\n'
-            else:
-                self.buf = '\n'
-            ret = ret[0:-len(self.buf)]
-
-        return ret
 
 
 def parse_pstorerc():

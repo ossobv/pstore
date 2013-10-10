@@ -85,7 +85,57 @@ def sendfile(outfp, infp):
     return bytes
 
 
+class FileWithoutTrailingEnter(object):
+    """
+    If you're inputting a file over stdin, you can consider trimming
+    the trailing EOF. This file wrapper does that.
+    """
+    def __init__(self, fp):
+        self.fp = fp
+        self.buf = ''
+        self.eof = False
+
+    def read(self, size=-1):
+        if size == -1:
+            readsize = size
+        else:
+            readsize = size - len(self.buf) + 2  # read more bytes
+
+        # More bytes are needed
+        if not self.eof and (size == -1 or readsize > 0):
+            data = self.fp.read(readsize)
+            if size != -1 and len(data) < readsize:
+                self.eof = True
+            if data:
+                self.buf = self.buf + data
+
+        # No bytes to keep? Return quickly.
+        if not self.buf.endswith('\n'):
+            if size == -1:
+                ret, self.buf = self.buf, ''
+            else:
+                ret, self.buf = self.buf[0:size], self.buf[size:]
+            return ret
+
+        # Ok, hold back one or two bytes.
+        if self.buf.endswith('\r\n'):
+            keep = 2
+        else:
+            keep = 1
+
+        if size == -1:
+            ret, self.buf = self.buf[0:-keep], self.buf[-keep:]
+        elif size <= len(self.buf) - keep:
+            ret, self.buf = self.buf[0:size], self.buf[size:]
+        else:
+            assert self.eof
+            ret, self.buf = self.buf[0:-keep], self.buf[-keep:]
+
+        return ret
+
+
 if __name__ == '__main__':
+    import os
     from sys import stdin
     from tempfile import TemporaryFile
     from unittest import TestCase, main
@@ -113,5 +163,93 @@ if __name__ == '__main__':
 
         def test_get_size_stdin(self):
             self.assertEquals(get_size(stdin), -1)
+
+    class TestFileWithoutTrailingEnter(TestCase):
+        def create_child(self):
+            rp, wp = os.pipe()
+
+            childpid = os.fork()
+            if not childpid:
+                os.close(rp)
+                self.wf = os.fdopen(wp, 'w')
+                return True
+
+            os.close(wp)
+            self.rf = os.fdopen(rp, 'r')
+            self.childpid = childpid
+            return False
+
+        def teardown_child(self):
+            self.wf.close()
+            os._exit(0)
+
+        def teardown_parent(self):
+            self.rf.close()
+            os.waitpid(self.childpid, 0)
+
+        def test_selftest(self):
+            if self.create_child():
+                self.wf.write('test\n')
+                self.wf.flush()
+                self.teardown_child()
+            else:
+                self.assertEquals(self.rf.read(5), 'test\n')
+                self.teardown_parent()
+
+        def test_trailing_nolf(self):
+            if self.create_child():
+                self.wf.write('ABC\nDEF')
+                self.teardown_child()
+            else:
+                wrapped = FileWithoutTrailingEnter(self.rf)
+                self.assertEquals(wrapped.read(4), 'ABC\n')
+                self.assertEquals(wrapped.read(-1), 'DEF')
+                self.teardown_parent()
+
+        def test_trailing_nolf2(self):
+            if self.create_child():
+                self.wf.write('ABC\nDEF')
+                self.teardown_child()
+            else:
+                wrapped = FileWithoutTrailingEnter(self.rf)
+                self.assertEquals(wrapped.read(4), 'ABC\n')
+                self.assertEquals(wrapped.read(3), 'DEF')
+                self.assertEquals(wrapped.read(2), '')
+                self.teardown_parent()
+
+        def test_trailing_1lf(self):
+            if self.create_child():
+                self.wf.write('ABC\nDEF\n')
+                self.teardown_child()
+            else:
+                wrapped = FileWithoutTrailingEnter(self.rf)
+                self.assertEquals(wrapped.read(4), 'ABC\n')
+                self.assertEquals(wrapped.read(-1), 'DEF')
+                self.teardown_parent()
+
+        def test_trailing_2crlf(self):
+            if self.create_child():
+                self.wf.write('ABC\n\r\n\r\n')
+                self.teardown_child()
+            else:
+                wrapped = FileWithoutTrailingEnter(self.rf)
+                self.assertEquals(wrapped.read(32), 'ABC\n\r\n')
+                self.teardown_parent()
+
+        def test_trailing_2lf(self):
+            if self.create_child():
+                self.wf.write('ABC')
+                self.wf.flush()
+                self.wf.write('DEF\n')
+                self.wf.flush()
+                self.wf.write('\n\n')
+                self.wf.flush()
+                self.teardown_child()
+            else:
+                wrapped = FileWithoutTrailingEnter(self.rf)
+                self.assertEquals(wrapped.read(4), 'ABCD')
+                self.assertEquals(wrapped.read(3), 'EF\n')
+                self.assertEquals(wrapped.read(2), '\n')
+                self.teardown_parent()
 
     main()  # unittest.main()

@@ -29,7 +29,7 @@ from distutils.version import LooseVersion  # strict is too ~, even for me
 
 try:
     # When installing the django-pstore package before the pstore package, this
-    # would fail. 
+    # would fail.
     from pstorelib import VERSION_STRING
 except ImportError:
     VERSION_STRING = None
