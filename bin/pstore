@@ -652,7 +652,7 @@ def run_usage(verbose=False):
         ('  --store-url=URL       ', 0,
          'Backend URL (supply more as fallbacks)'),
         ('  --verbose, -v         ', 0,
-         'Verbose mode'),
+         'Verbose mode (use --help -v for more help)'),
     )
 
     # Undocumented environment variables:
