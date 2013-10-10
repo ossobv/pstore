@@ -4,6 +4,9 @@ pstore :: Python Protected Password Store
 The list of changes.
 
 
+????-??-??: 1.0.4a
+------------------
+
 2013-10-10: 1.0.3
 -----------------
  * Messages to auth.log get a proper prefix.

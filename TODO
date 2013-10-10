@@ -3,6 +3,12 @@ List of items to do
 
 * Need to get rid of the INFO/NOTICE messages..
 
+* Allow multiple contexts in .pstorerc (-t contextX) to switch between
+  different store-urls quickly.
+* Fix .pstorerc parsing to (a) not require -- before the args. And allow
+  leading '#' to comment out stuff. And have leading "[contextX]"
+  headings. This should backward compatibility with older pstorerc's.
+
 * If a response returns 500, we should redo the nonce request on the other
   server too, right?
 
@@ -21,14 +27,13 @@ List of items to do
 * Rate-limit the nonce check by IP. Or add some other method to avoid DoS by
   annoying users.
 
-* Add more verbose audit logs for all mutable operations.
+* Add more verbose audit logs for all mutable operations. Use the django_admin_log?
 * Log all permission-denied-errors to auth.log. Move all auth-log writing to
   readable log statements, and leave only the decorators for views that aren't
   cleaned up yet.
 * Do we need to add a post-success-view audit log? Or a post-failure-view log entry?
 
 * Document that you may want to keep some kind of history using database dumps.
-* Document that some alteration notifications are sent by e-mail.
 * http://tmpvar.com/markdown.html
 * Make CODING.md markdown.
 * Add manpage.
