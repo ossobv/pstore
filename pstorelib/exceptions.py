@@ -71,4 +71,5 @@ class NotFound(UserError):
 
 
 class NoNonce(UserError):
-    description = 'nonce creation refused (too many unused nonces?)'
+    description = ('nonce creation refused '
+                   '(wrong user? too many unused nonces?)')

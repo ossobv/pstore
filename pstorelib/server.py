@@ -27,10 +27,11 @@ from random import randint
 from socket import error as SocketError
 from sys import exc_info
 from urllib import quote, unquote, urlencode
-from urllib2 import Request, URLError, urlopen
+from urllib2 import HTTPError, Request, URLError, urlopen
 
 from pstorelib.crypt import CryptoReader
-from pstorelib.exceptions import BackendDown, NotAllowed, NotFound, NoNonce
+from pstorelib.exceptions import (BackendDown, BackendError, NotAllowed,
+                                  NotFound, NoNonce)
 
 
 class Backend(object):
@@ -169,14 +170,26 @@ class Backend(object):
                     file.close()
                     raise NotImplementedError(path)
 
-            except (SocketError, URLError), e:
-                code = getattr(e, 'code', 500)
-                if code == 403:
-                    raise NotAllowed()
-                elif code == 404:
-                    raise NotFound()
+            except HTTPError, e:
                 if not first_exception:
                     first_exception = exc_info()
+
+                status_code = e.code
+                try:
+                    body = e.read()
+                finally:
+                    e.close()
+                if status_code == 403:
+                    raise NotAllowed()
+                elif status_code == 404:
+                    raise NotFound()
+                elif status_code < 500:
+                    raise BackendError(body)
+
+            except (SocketError, URLError):
+                if not first_exception:
+                    first_exception = exc_info()
+
             else:
                 break
         else:
