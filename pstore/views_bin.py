@@ -33,7 +33,7 @@ from pstorelib.bytes import BytesIO
 from pstorelib.server import urlunquote
 
 from pstore.decorators import audit_view, nonce_required
-from pstore.http import EncryptedResponse, VoidResponse
+from pstore.http import EncryptedResponse, HttpError, VoidResponse
 from pstore.models import Nonce, Object, ObjectPerm, Property
 from pstore.security import get_object_or_403
 
@@ -89,10 +89,12 @@ def create_property(object, property, file, user):
                 WHERE id = %s;
             ''', (tempname, prop.id))
         except:
-            raise Exception('FIXME-EXCEPTION: mysqld LOAD_FILE failed for'
-                            ' %s, check apparmor. Check File_Priv mysql '
-                            'permissions, check @@max_allowed_packet, '
-                            'checkl @@secure_file_priv' % (tempname,))
+            # FIXME: split this up into a user error and a server error
+            # and use the logging subsystem to log the server error.
+            raise HttpError(413, 'mysqld LOAD_FILE failed for'
+                                 ' %s, check apparmor. Check File_Priv mysql '
+                                 'permissions, check @@max_allowed_packet, '
+                                 'check @@secure_file_priv' % (tempname,))
         finally:
             # Close the cursor here. The http middleware will commit the
             # transaction when done.

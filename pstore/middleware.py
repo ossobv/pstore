@@ -22,7 +22,9 @@ import time
 
 from django.conf import settings
 from django.db import connection
+from django.http import HttpResponse
 
+from pstore.http import HttpError
 from pstore.security import validate_nonce_b64
 
 
@@ -42,6 +44,15 @@ class AuthenticateByNonceMiddleware(object):
         else:
             request.user.used_nonce = False
 
+        return None
+
+
+class HttpErrorMiddleware(object):
+    def process_exception(self, request, exception):
+        if isinstance(exception, HttpError):
+            return HttpResponse(content=exception.description,
+                                content_type='text/plain; charset=utf-8',
+                                status=exception.status_code)
         return None
 
 

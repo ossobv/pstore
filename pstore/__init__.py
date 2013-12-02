@@ -18,10 +18,3 @@ Copyright (C) 2013  Walter Doekes <wdoekes>, OSSO B.V.
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307,
     USA.
 """
-
-
-class HttpError(Exception):
-    def __init__(self, status_code, description):
-        super(HttpError, self).__init__(status_code, description)
-        self.status_code = status_code
-        self.description = description

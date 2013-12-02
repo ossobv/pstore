@@ -24,6 +24,13 @@ from django.http import HttpResponse
 from pstorelib.bytes import get_size
 
 
+class HttpError(Exception):
+    def __init__(self, status_code, description):
+        super(HttpError, self).__init__(status_code, description)
+        self.status_code = status_code
+        self.description = description
+
+
 class EncryptedResponse(HttpResponse):
     """
     An HTTP response returning encrypted data. It doesn't do any encryption, it

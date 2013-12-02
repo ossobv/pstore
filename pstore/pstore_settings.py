@@ -50,6 +50,10 @@ MIDDLEWARE_CLASSES = (
     # Authenticate users by nonce instead.
     'pstore.middleware.AuthenticateByNonceMiddleware',
 
+    # Handle HttpErrors by feeding them as response.
+    # TODO/FIXME: check that the transaction is still aborted
+    'pstore.middleware.HttpErrorMiddleware',
+
     # We want operations to be atomic! But do this after the auth-nonce
     # middleware so people won't run into the lack of nonces after they abuse
     # the pstore client (resulting in 403/404s).
