@@ -6,6 +6,7 @@ The list of changes.
 
 ????-??-??: 1.0.4a
 ------------------
+ * Begin making a few error messages more friendly.
 
 2013-10-10: 1.0.3
 -----------------
