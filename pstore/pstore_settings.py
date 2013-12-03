@@ -120,16 +120,16 @@ LOGGING = {
         },
     },
     'loggers': {
-        # Mail admins on ERROR or worse.
-        'django.request': {
-            'handlers': ('mail_admins',),
-            'level': 'ERROR',
-            'propagate': True,
-        },
         # Put INFO or worse in syslog.
         'pstore.audit': {
             'handlers': ('syslog',),
             'level': 'INFO',
+            'propagate': True,
+        },
+        # Mail admins on ERROR or worse (not just for django.request).
+        '': {
+            'handlers': ('mail_admins',),
+            'level': 'ERROR',
             'propagate': True,
         },
     },
