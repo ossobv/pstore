@@ -99,6 +99,8 @@ def create_property(object, property, file, user):
                 WHERE id = %s;
             ''', (tempname, prop.id))
         except Exception, e:
+            # UPDATE mysql.user SET file_priv = 'Y' WHERE user = 'pstore' AND
+            #   host = 'localhost' AND file_priv = 'N'; FLUSH PRIVILEGES;
             raise HttpError(413, 'request too large (mysqld permissions)',
                 ('mysqld LOAD_FILE failed for %s, check apparmor. Check '
                  'File_Priv mysql permissions, check @@max_allowed_packet, '

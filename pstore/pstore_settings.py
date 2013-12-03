@@ -127,8 +127,10 @@ LOGGING = {
             'propagate': True,
         },
         # Mail admins on ERROR or worse (not just for django.request).
+        # And also write to the same auth.log, because it clarifies that
+        # the previous statement didn't complete.
         '': {
-            'handlers': ('mail_admins',),
+            'handlers': ('syslog', 'mail_admins'),
             'level': 'ERROR',
             'propagate': True,
         },
