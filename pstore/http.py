@@ -18,17 +18,39 @@ Copyright (C) 2012,2013  Walter Doekes <wdoekes>, OSSO B.V.
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307,
     USA.
 """
+import logging
+
 from django.core.servers.basehttp import FileWrapper
 from django.http import HttpResponse
 
 from pstorelib.bytes import get_size
 
 
+logger = logging.getLogger('pstore')
+
+
 class HttpError(Exception):
-    def __init__(self, status_code, description):
-        super(HttpError, self).__init__(status_code, description)
+    """
+    This exception is passed on to the HTTP layer where it is propagated back
+    to the client.
+    """
+    def __init__(self, status_code, user_description, error_description=None):
+        """
+        The status_code is the HTTP error code.
+        The user_description is the problem description returned over HTTP.
+        Optionally error_description may hold a text that gets sent to the
+        error log.
+        """
+        super(HttpError, self).__init__(status_code, user_description)
         self.status_code = status_code
-        self.description = description
+        self.user_description = user_description
+
+        if error_description:
+            # Passing args instead of instance, as we'd otherwise lose the
+            # error_description in the error mail.
+            args = (status_code, user_description, error_description)
+            sys_exc_info = (HttpError, args, None)
+            logger.error(error_description, exc_info=sys_exc_info)
 
 
 class EncryptedResponse(HttpResponse):

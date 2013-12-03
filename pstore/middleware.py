@@ -50,7 +50,7 @@ class AuthenticateByNonceMiddleware(object):
 class HttpErrorMiddleware(object):
     def process_exception(self, request, exception):
         if isinstance(exception, HttpError):
-            return HttpResponse(content=exception.description,
+            return HttpResponse(content=exception.user_description,
                                 content_type='text/plain; charset=utf-8',
                                 status=exception.status_code)
         return None
