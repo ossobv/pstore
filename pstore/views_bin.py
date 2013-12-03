@@ -19,7 +19,7 @@ Copyright (C) 2012,2013  Walter Doekes <wdoekes>, OSSO B.V.
     USA.
 """
 from datetime import datetime, timedelta
-from os import chmod
+from os import chmod, unlink
 
 from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied
@@ -50,10 +50,13 @@ def create_property(object, property, file, user):
     if user:
         ptype = Property.TYPE_SHARED
         if file.size == 0:
-            raise Exception('FIXME-EXCEPTION: 0len = impossible')
+            raise HttpError(400, 'encrypted properties cannot be 0 bytes in '
+                                 'length')
     else:
         ptype = Property.TYPE_PUBLIC
 
+    # Depending on the file size, we either get an InMemoryUploadedFile or a
+    # TemporaryUploadedFile.
     if hasattr(file, 'temporary_file_path'):
         # Tricks! We'll use a custom INSERT on localhost. Otherwise we'll
         # run into the MySQL max_packet_size limit.
@@ -63,7 +66,9 @@ def create_property(object, property, file, user):
         tempname = None
         data = file.read()
         if len(data) != file.size:
-            raise RuntimeError('file read returned wrong amount of bytes')
+            raise HttpError(500, 'file read returned wrong amount of bytes',
+                ('We expected to read %d bytes at once from %s. We only got '
+                 '%d bytes.' % (file.size, file.name, len(data))))
 
     prop = Property.objects.create(object=object, name=property,
                                    type=ptype, value=data, user=user)
@@ -75,12 +80,17 @@ def create_property(object, property, file, user):
         # three. We expect you to run the MySQLd on localhost for now..
         if (connection.settings_dict['HOST'] not in
             ('', 'localhost', '127.0.0.1')):
-            raise Exception('FIXME-EXCEPTION: only works on localhost')
+            raise HttpError(413, 'request too large (mysqld infrastructure)',
+                ('mysqld can only use LOAD_FILE() on localhost and the DB '
+                 'server seems to be running on %s' %
+                 (connection.settings_dict['HOST'],)))
         # MySQLd must get read powers.
         try:
-            chmod(tempname, 0644)
-        except:
-            raise Exception('FIXME-EXCEPTION: chmod failed for LOAD_FILE')
+            chmod(tempname, 0604)
+        except Exception, e:
+            raise HttpError(413, 'request too large (webserver permissions)',
+                ('For mysqld to do load LOAD_FILE() on %s, we need to alter '
+                 'file permissions, we got: %s' % (tempname, e)))
         # Try to read the file.
         try:
             cursor = connection.cursor()
@@ -88,16 +98,16 @@ def create_property(object, property, file, user):
                 UPDATE pstore_property SET value = LOAD_FILE(%s)
                 WHERE id = %s;
             ''', (tempname, prop.id))
-        except:
-            # FIXME: split this up into a user error and a server error
-            # and use the logging subsystem to log the server error.
-            raise HttpError(413, 'mysqld LOAD_FILE failed for'
-                                 ' %s, check apparmor. Check File_Priv mysql '
-                                 'permissions, check @@max_allowed_packet, '
-                                 'check @@secure_file_priv' % (tempname,))
+        except Exception, e:
+            raise HttpError(413, 'request too large (mysqld permissions)',
+                ('mysqld LOAD_FILE failed for %s, check apparmor. Check '
+                 'File_Priv mysql permissions, check @@max_allowed_packet, '
+                 'check @@secure_file_priv: %s' % (tempname, e)))
         finally:
+            # Remove access to the file asap.
+            unlink(tempname)
             # Close the cursor here. The http middleware will commit the
-            # transaction when done.
+            # transaction when/if done.
             cursor.close()
 
 
