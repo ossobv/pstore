@@ -184,6 +184,8 @@ class Backend(object):
                 elif status_code == 404:
                     raise NotFound()
                 elif status_code < 500:
+                    if len(body) > 1024:
+                        body = body[0:1021] + '...'
                     raise BackendError(body)
 
             except (SocketError, URLError):
