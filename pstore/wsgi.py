@@ -36,10 +36,15 @@ import os
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'pstore.settings')
 
 ###############################################################################
-# NOTE: If you're using virtualenv(1) to manage your python dependencies, you
+# If you're using virtualenv(1) to manage your python dependencies, you
 # can set the sys.path from your project virtualenv here:
 #import sys
 #sys.path[:] = [/* different path list */]
+# But your wsgi server might be in the know about virtualenv. E.g. for uwsgi
+# you can do this in the config:
+#virtualenv = /srv/virtualenvs/pstore
+# Possibly combined with the PYTHONPATH environment variable:
+#env = PYTHONPATH=/srv/django-apps:/opt/django14
 ###############################################################################
 
 # This application object is used by any WSGI server configured to use this
