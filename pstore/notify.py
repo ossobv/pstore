@@ -204,11 +204,12 @@ def notify_user_deletion(user, publickey, objects):
         body.append('- %s' % (object.identifier,))
     body.append('')
 
-    body.append('\nPublic key:\n')
-    body.append('[description]\n  %s\n' %
-                (publickey.description.replace('\n', '\n  '),))
-    body.append('[key]\n  %s' % (publickey.key.replace('\n', '\n  '),))
-    body.append('')
+    if publickey:
+        body.append('\nPublic key:\n')
+        body.append('[description]\n  %s\n' %
+                    (publickey.description.replace('\n', '\n  '),))
+        body.append('[key]\n  %s' % (publickey.key.replace('\n', '\n  '),))
+        body.append('')
 
     for object in objects:
         body.append('\nObject %s:\n' % (object.identifier,))
