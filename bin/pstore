@@ -538,8 +538,12 @@ def run_show_password(machine_info, machine_password, ssh_host_hack=None):
         info = machine_info['properties'][property]
         if info['enctype'] == 'none':
             if info['data'] is not None:
-                print '%s = %s' % (property,
-                                   info['data'].decrypt_with(None).read())
+                data = info['data'].decrypt_with(None).read()
+                if '\n' in data:
+                    print '%s = \\' % (property,)
+                    print ' | %s' % (data.replace('\n', '\n | '),)
+                else:
+                    print '%s = %s' % (property, data)
             else:
                 print '%s = (%s byte document)' % (property, info['size'])
         else:
