@@ -104,6 +104,7 @@ class PropertyAdmin(admin.ModelAdmin):
     exclude = ('value',)  # raw/binary values.. should not be in admin
     list_display = ('id', 'object', 'name', 'short_value', 'user')
     ordering = ('object__identifier', 'name', 'user__username')
+    search_fields = ('object__identifier',)
 
 
 class PublicKeyAdmin(admin.ModelAdmin):
