@@ -35,6 +35,9 @@ DEFAULT_FROM_EMAIL = SERVER_EMAIL = 'Pstore <noreply@example.com>'
 # E-mail settings
 ADMINS = MANAGERS = (('Developers', '%s@example.com' % _OSUSER),)
 
+# Path settings
+STATIC_ROOT = '/srv/http/pstore/static'
+
 # DB settings
 DATABASES = {
     'default': {
