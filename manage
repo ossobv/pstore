@@ -54,7 +54,7 @@ if [ "$arg1" = "dbdump" ]; then
 elif [ "$arg1" = "flushall" ]; then
     printf 'Flushing all data to example setup! Continue [y/n]? '
     read x; [ "$x" = y ] || exit 1
-    $django_admin syncdb --settings="$settings" &&
+    $django_admin syncdb --noinput --settings="$settings" &&
 	    yes "`printf 'yes\nno'`" | $django_admin flush --settings="$settings" &&
 	    $django_admin loaddata example_data --settings="$settings"
 	    echo 'Imported example_data!'
