@@ -33,6 +33,7 @@ def collect_object_info(property_qs, user):
     MAX_PROPERTY_SIZE = 4096
 
     info = []
+    # BEWARE: For the SQLite3 backend, the LENGTH() is incorrect!
     properties = (property_qs.filter(Q(user=None) | Q(user=user))
                   .filter(Q(user=None) | Q(user=user))
                   .defer('value')

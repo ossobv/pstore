@@ -85,13 +85,21 @@ def get_object(request, object_identifier):
         propqs = propqs.filter(Q(user__username=u) | Q(user=None))
     else:
         propqs = propqs.filter(user=None)
+    # BEWARE: For the SQLite3 backend, the LENGTH() is incorrect!
     propqs = propqs.extra(select={'size': 'LENGTH(value)'})
     properties = set(propqs.values_list('id', 'name', 'type', 'size', 'user'))
 
     # Get the values, but only for small properties.
     small_property_ids = [i[0] for i in properties if i[3] <= 2048]
-    property_values = dict(Property.objects.filter(id__in=small_property_ids)
-                           .values_list('id', 'value'))
+
+    # https://code.djangoproject.com/ticket/9619
+    # We cannot do values_list when using SQLite3.
+    # #property_values = dict(Property.objects
+    # #                       .filter(id__in=small_property_ids)
+    # #                       .values_list('id', 'value'))
+    property_qs = Property.objects.filter(id__in=small_property_ids)
+    property_values = dict((i.id, i.value)
+                           for i in property_qs.only('id', 'value'))
 
     # Put properties in the results dictionary.
     result['properties'] = {}
@@ -231,13 +239,13 @@ def validate(request):
         ))
 
     # FIXME: code below is broken for objects with both readers and writers..
-    ## Assert that all objects have someone who can write.
-    #for object in Object.objects.filter(allowed__can_write=False):
-    #    errors.append((
-    #        'Object', object.id,
-    #        '%s does not have an admin' % (object.identifier,),
-    #        'Add ObjectPerm items with can_write powers',
-    #    ))
+    # # Assert that all objects have someone who can write.
+    # #for object in Object.objects.filter(allowed__can_write=False):
+    # #   errors.append((
+    # #       'Object', object.id,
+    # #       '%s does not have an admin' % (object.identifier,),
+    # #       'Add ObjectPerm items with can_write powers',
+    # #   ))
 
     # Check property types.
     for property in (Property.objects.exclude(type__in=[tpub, tshar])
@@ -282,7 +290,7 @@ def validate(request):
 
         for property_name, property_user_ids in per_property.iteritems():
             if (len(property_user_ids) != len(user_ids) or
-                set(property_user_ids) != set(user_ids)):
+                    set(property_user_ids) != set(user_ids)):
                 errors.append((
                     'Object', object.id,
                     ('%s -> %s has wrong number of properties' %
