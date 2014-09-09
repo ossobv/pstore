@@ -20,7 +20,18 @@ Copyright (C) 2012,2013  Walter Doekes <wdoekes>, OSSO B.V.
 """
 from base64 import b64decode, b64encode
 
+from django.conf import settings
 from django.db import models
+
+
+def _db_engines():
+    return set(i['ENGINE'].rsplit('.', 1)[-1]
+               for i in settings.DATABASES.values())
+_is_mysql = all(i == 'mysql' for i in _db_engines())
+
+if not _is_mysql:
+    from warnings import warn
+    warn('Not using MySQL engine, you get encoded blob performance')
 
 
 class Model(models.Model):
@@ -47,8 +58,12 @@ class AsciiField(models.CharField):
     def get_prep_value(self, value):
         return value.encode('ascii', 'replace')
 
-    def db_type(self, **kwargs):
-        return 'VARBINARY(%s)' % (self.max_length,)
+    if _is_mysql:
+        def db_type(self, **kwargs):
+            return 'VARBINARY(%s)' % (self.max_length,)
+    else:
+        def db_type(self, **kwargs):
+            return 'VARCHAR(%s)' % (self.max_length,)
 
 
 class BlobField(models.Field):
@@ -59,10 +74,13 @@ class BlobField(models.Field):
     """
     description = 'Binary'
 
-    #
-    # The to_python and value_to_string methods here are used for serializing
-    # to fixtures. Internally, the data is passed as bytestrings.
-    #
+    # For the MySQL version we don't need this. The to_python and
+    # value_to_string methods will get called for serializing and
+    # deserializing fixtures only.
+    # For the SQLite3 version, we store the values in base64 in the DB,
+    # so to_python must always get called.
+    if not _is_mysql:
+        __metaclass__ = models.SubfieldBase
 
     def to_python(self, value):
         """
@@ -82,8 +100,17 @@ class BlobField(models.Field):
         value = self._get_val_from_obj(obj)
         return unicode(b64encode(value))
 
-    def db_type(self, **kwargs):
-        # We use a LONGBLOB which can hold up to 4GB of bytes. A MEDIUMBLOB of
-        # max 16MB should probably be enough, but we don't want to add an
-        # arbitrary limit there.
-        return 'LONGBLOB'
+    if _is_mysql:
+        def db_type(self, **kwargs):
+            # We use a LONGBLOB which can hold up to 4GB of bytes. A
+            # MEDIUMBLOB of max 16MB should probably be enough, but we
+            # don't want to add an arbitrary limit there.
+            return 'LONGBLOB'
+    else:
+        def get_prep_value(self, value):
+            if value is None:
+                return None
+            return b64encode(value)
+
+        def db_type(self, **kwargs):
+            return 'BLOB'
