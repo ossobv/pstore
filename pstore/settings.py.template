@@ -18,7 +18,7 @@ Copyright (C) 2010,2012,2013  Walter Doekes <wdoekes>, OSSO B.V.
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307,
     USA.
 """
-from .pstore_settings import *
+from .pstore_settings import *  # noqa
 
 import os
 import pwd
@@ -41,24 +41,29 @@ STATIC_ROOT = '/srv/http/pstore/static'
 # DB settings
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',  # or e.g. sqlite3
+        'ENGINE': 'django.db.backends.mysql',
+        # 'ENGINE': 'django.db.backends.sqlite3',  # for testing
         'NAME': 'pstore_%s' % _OSUSER,
         'USER': _OSUSER,
         'PASSWORD': 'somepassword',
         'HOST': '',
         'PORT': '',
-        'OPTIONS': {
-            'init_command':
-                ("SET innodb_strict_mode=ON;"
-                 "SET sql_mode='ANSI,STRICT_ALL_TABLES';"
-                 "SET storage_engine=INNODB;"),
-        },
     },
 }
 
+if DATABASES['default']['ENGINE'].endswith('.mysql'):
+    DATABASES['default']['OPTIONS'] = {
+        'init_command':
+            ("SET innodb_strict_mode=ON;"
+             "SET sql_mode='ANSI,STRICT_ALL_TABLES';"
+             "SET storage_engine=INNODB;"),
+    }
+elif DATABASES['default']['ENGINE'].endswith('.sqlite3'):
+    DATABASES['default']['NAME'] = DATABASES['default']['NAME'] + '.db'
+
 # GnuPG requires a writable home.
-#import os
-#os.environ["GNUPGHOME"] = '/tmp'
+# #import os
+# #os.environ["GNUPGHOME"] = '/tmp'
 
 if DEBUG:
     # While we're developing, it's nice to see backtraces on stderr. Especially
@@ -82,7 +87,7 @@ if DEBUG:
     }
 
 # Secret key
-#from random import choice
-#chars = 'abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(-_=+)'
-#print repr(''.join([choice(chars) for i in range(50)]))
+# #from random import choice
+# #chars = 'abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(-_=+)'
+# #print repr(''.join([choice(chars) for i in range(50)]))
 SECRET_KEY = '' # set this, according to the above
