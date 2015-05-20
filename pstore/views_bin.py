@@ -250,14 +250,22 @@ def set_property(request, object_identifier, property_name):
 
     # Autocreate object if it didn't exist yet. Next, make *sure* that 'author'
     # that we found in the nonce is a valid writer.
-    obj, created = Object.objects.get_or_create(identifier=object_identifier)
+    if users:
+        obj, created = Object.objects.get_or_create(
+            identifier=object_identifier)
+    else:
+        try:
+            obj = Object.objects.get(identifier=object_identifier)
+        except Object.DoesNotExist:
+            raise Http404('Refusing to create an object automatically')
+        else:
+            created = False
+
     if created:
-        # We did get a proper list of users, right?
-        if not users:
-            # We need a list of users if this is a new entry! Yes.. that means
-            # that we *must* have an encrypted property for the machine to be
-            # created. Let that be the case for now.
-            raise Exception('FIXME-EXCEPTION')
+        # We need a list of users if this is a new entry! Yes.. that means
+        # that we *must* have an encrypted property for the machine to be
+        # created. Let that be the case for now.
+        assert users
 
         # Author must be in the list of users too.
         if author not in users:
