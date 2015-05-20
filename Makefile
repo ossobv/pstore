@@ -1,6 +1,4 @@
 .PHONY: clean distclean isclean default dummy
-.PHONY: dist doc pstore-dist django-pstore-dist pstore-full
-.PHONY: test testcopyright testdjango testint testlib testpep testtodo _testtodo
 
 default: dist
 
@@ -21,12 +19,18 @@ isclean:
 	test ! -f README.txt
 	test ! -f setup.py
 
+
+.PHONY: dist doc
+
 dist: doc pstore-dist django-pstore-dist pstore-full
 	# Eggs are out, tgzs are in. Building sdist should do the trick, as
 	# long as we hack stuff around to create a setup.py for both.
 
 doc: README.rst
 README.rst: README.md
+
+
+.PHONY: test testcopyright testdjango testint testlib testpep testtodo _testtodo
 
 # run the quickest tests first
 test: clean testcopyright testpep testlib testint testdjango testtodo
@@ -72,6 +76,46 @@ _testtodo:
 	@printf '\n** COUNTING TO-DO MARKS **\n\n'
 	git ls-files | grep -vF Makefile | xargs egrep 'XXX|TODO|FIXME' | sed -e 's/:.*//' | uniq -c | sort -nr
 	@echo
+
+
+.PHONY: precommit htmlindent pepclean flake8 vimmodelines
+
+precommit: htmlindent flake8
+
+htmlindent:
+	find . -name '*.html' | while read n; do \
+	  min=0; \
+	  sed -e 's/^\( *\).*/\1/;/^$$/d' < "$$n" | \
+	  sort -u | \
+	  while IFS= read l; do \
+	    test $$min -eq 0 && test $${#l} -ne 4 && echo "indent: $$n (offset $${#l} is not 4)" && break; \
+	    min=1; \
+	    test $$(($${#l} % 4)) -ne 0 && echo "indent: $$n (indent $${#l} is not 4)" && break; \
+	  done; true; \
+	done
+pepclean:
+	@# Replace tabs with spaces, remove trailing spaces, remove trailing newlines.
+	if which pepclean >/dev/null; then \
+	  find . '(' -name '*.py' -o -name '*.html' -o -name '*.xml' ')' \
+	    -type f -print0 | xargs --no-run-if-empty -0 pepclean; \
+	fi
+flake8: pepclean vimmodelines
+	@# Use a custom --format so the path is space separated for
+	@# easier copy-pasting.
+	if which flake8 >/dev/null; then \
+	  find . -name '*.py' -print0 | \
+	    xargs --no-run-if-empty -0 flake8 \
+	      --max-line-length=99 --max-complexity=19 \
+	      --format='%(path)s %(row)d:%(col)d [%(code)s] %(text)s'; \
+	fi
+vimmodelines:
+	find . -name '*.py' -size +0 '!' -perm -u=x -print0 | \
+	  xargs --no-run-if-empty -0 grep -L '^# vim:' | \
+	  xargs --no-run-if-empty -d\\n \
+	    sed -i -e '1i# vim: set ts=8 sw=4 sts=4 et ai:'
+
+
+.PHONY: pstore-dist django-pstore-dist pstore-full
 
 pstore-dist: isclean README.rst
 	# sdist likes a setup.py
