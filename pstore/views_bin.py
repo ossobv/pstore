@@ -178,26 +178,31 @@ def get_property(request, object_identifier, property_name):
     # Query:
     qs = Property.objects.filter(
         object__identifier=object_identifier,
-        name=property_name
-    )
+        name=property_name)
     if u:
         qs = qs.filter(Q(user=None) | Q(user__username=u))
     else:
         qs = qs.filter(user=None)
 
     # Check authorization:
-    if request.user.has_perms('pstore.view_any_object'):
+    if request.user.has_perm('pstore.view_any_object'):
         pass
     elif not ObjectPerm.objects.filter(
-        object__identifier=object_identifier,
-        user=request.user
-    ).exists():
+            object__identifier=object_identifier,
+            user=request.user).exists():
         raise PermissionDenied('Not staff and not permitted')
 
     # Results:
     items = list(qs[0:2])
     if not items:
-        raise Http404('No such property')
+        # Was this because we didn't have permission or because there
+        # simply wasn't a property?
+        if (request.user.has_perm('pstore.view_any_object') and
+                not Property.objects.filter(
+                    object__identifier=object_identifier,
+                    name=property_name).exists()):
+            raise Http404('No such property')
+        raise PermissionDenied('Not staff or not permitted')
 
     if len(items) > 1:
         class_ = Property.MultipleObjectsReturned
