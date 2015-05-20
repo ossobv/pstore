@@ -77,7 +77,7 @@ pstore-dist: isclean README.rst
 	# sdist likes a setup.py
 	cat setups.py | sed -e "/^if __name__ == '__main__':/,\$$d" > setup.py
 	echo 'setup_pstore()' >> setup.py
-	# sdist likes a reStructuredText README.txt 
+	# sdist likes a reStructuredText README.txt
 	cp -n README.rst README.txt
 	# do the sdist
 	python setup.py sdist
