@@ -176,9 +176,9 @@ class SSHKeyParser(object):
         # If there are lines left, they contain encryption info.
         if len(lines):
             if (len(lines) != 3 or
-                lines[2].strip() != '' or
-                not lines[0].startswith('Proc-Type: 4,ENCRYPTED') or
-                not lines[1].startswith('DEK-Info: ')):
+                    lines[2].strip() != '' or
+                    not lines[0].startswith('Proc-Type: 4,ENCRYPTED') or
+                    not lines[1].startswith('DEK-Info: ')):
                 raise CryptBadPrivKey('encryption info parse fail', blob)
 
             dek_info = lines[1][9:].strip().split(',')

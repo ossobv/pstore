@@ -66,7 +66,8 @@ def create_property(object, property, file, user):
         tempname = None
         data = file.read()
         if len(data) != file.size:
-            raise HttpError(500, 'file read returned wrong amount of bytes',
+            raise HttpError(
+                500, 'file read returned wrong amount of bytes',
                 ('We expected to read %d bytes at once from %s. We only got '
                  '%d bytes.' % (file.size, file.name, len(data))))
 
@@ -79,8 +80,9 @@ def create_property(object, property, file, user):
         # We use LOAD_FILE() because it speeds up the writing by a factor
         # three. We expect you to run the MySQLd on localhost for now..
         if (connection.settings_dict['HOST'] not in
-            ('', 'localhost', '127.0.0.1')):
-            raise HttpError(413, 'request too large (mysqld infrastructure)',
+                ('', 'localhost', '127.0.0.1')):
+            raise HttpError(
+                413, 'request too large (mysqld infrastructure)',
                 ('mysqld can only use LOAD_FILE() on localhost and the DB '
                  'server seems to be running on %s' %
                  (connection.settings_dict['HOST'],)))
@@ -88,7 +90,8 @@ def create_property(object, property, file, user):
         try:
             chmod(tempname, 0604)
         except Exception, e:
-            raise HttpError(413, 'request too large (webserver permissions)',
+            raise HttpError(
+                413, 'request too large (webserver permissions)',
                 ('For mysqld to do load LOAD_FILE() on %s, we need to alter '
                  'file permissions, we got: %s' % (tempname, e)))
         # Try to read the file.
@@ -114,7 +117,8 @@ def create_property(object, property, file, user):
             #     # ROW based replication. Otherwise LOAD_FILE will fail.
             #     binlog_format = MIXED
             #
-            raise HttpError(413, 'request too large (mysqld permissions)',
+            raise HttpError(
+                413, 'request too large (mysqld permissions)',
                 ('mysqld LOAD_FILE failed for %s, check apparmor. Check '
                  'File_Priv mysql permissions, check @@max_allowed_packet, '
                  'check @@secure_file_priv: %s' % (tempname, e)))
@@ -332,8 +336,8 @@ def update_properties(request, object_identifier):
             username = file.name
             usernames.append(username)
     usernames = set(usernames)
-    users = dict((i.username, i) for i in
-                 User.objects.filter(username__in=usernames))
+    users = dict([(i.username, i) for i in
+                  User.objects.filter(username__in=usernames)])
     if len(users) != len(usernames):
         raise Exception('FIXME-EXCEPTION: user count invalid')
 
@@ -366,6 +370,7 @@ def update_properties(request, object_identifier):
     currently_allowed = set([i.user for i in
                              (ObjectPerm.objects.filter(object=obj)
                               .select_related('user'))])
+    del currently_allowed  # fixme.. use this
     # XXX: take currently_allowed, remove now-allowed:
     # delete the leftovers
     # add the not-in-currently_allowed

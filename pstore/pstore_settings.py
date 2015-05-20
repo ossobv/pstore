@@ -37,9 +37,9 @@ SITE_ID = 1
 
 # Middleware.
 MIDDLEWARE_CLASSES = (
-    #'pstore.middleware.LogSqlToConsoleMiddleware',
+    # #'pstore.middleware.LogSqlToConsoleMiddleware',
 
-    #DJANGO1.4+#'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    # #DJANGO1.4+#'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.middleware.common.CommonMiddleware',
 
     # Make sure we have a the requirements for admin work.

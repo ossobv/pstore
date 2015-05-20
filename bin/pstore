@@ -50,7 +50,7 @@ class PStoreInterface(object):
                                verbose=config['verbose'])
 
     ###########################################################################
-    ## SHORTCUTS
+    # SHORTCUTS
     ###########################################################################
 
     def add_machine(self, machine, new_password, allowed_users):
@@ -111,7 +111,7 @@ class PStoreInterface(object):
         return object['properties']
 
     ###########################################################################
-    ## REGULAR INTERFACE
+    # REGULAR INTERFACE
     ###########################################################################
 
     def alter_permissions(self, objectid, allowed_users):
@@ -309,7 +309,7 @@ def parse_options(args):
             while len(arg) and arg[-1] == '/':  # strip trailing slashes
                 arg = arg[0:-1]
             if (not arg.startswith('http://') and
-                not arg.startswith('https://')):
+                    not arg.startswith('https://')):
                 raise UserError('bad store-url; we only do http(s)', arg)
             config['store_urls'].append(arg)
         elif option in ('--user', '-u'):

@@ -204,7 +204,7 @@ class Backend(object):
         return data
 
     ###########################################################################
-    ## UTILITY
+    # UTILITY
     ###########################################################################
 
     def get_keys(self, users):
@@ -257,16 +257,16 @@ class Backend(object):
         return self._communicate(path, query=out)
 
 
-#def post_multipart(host, selector, fields, files):
-#    content_type, body = encode_multipart_formdata(fields, files)
-#    h = httplib.HTTP(host)
-#    h.putrequest('POST', selector)
-#    h.putheader('content-type', content_type)
-#    h.putheader('content-length', str(len(body)))
-#    h.endheaders()
-#    h.send(body)
-#    errcode, errmsg, headers = h.getreply()
-#    return h.file.read()
+# def post_multipart(host, selector, fields, files):
+#     content_type, body = encode_multipart_formdata(fields, files)
+#     h = httplib.HTTP(host)
+#     h.putrequest('POST', selector)
+#     h.putheader('content-type', content_type)
+#     h.putheader('content-length', str(len(body)))
+#     h.endheaders()
+#     h.send(body)
+#     errcode, errmsg, headers = h.getreply()
+#     return h.file.read()
 
 
 class MultiPartForm(object):

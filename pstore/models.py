@@ -54,12 +54,14 @@ class PublicKey(Model):
     Encrypted Property objects are encrypted using this public key.
     """
     user = models.OneToOneField(User, related_name='publickey')
-    key = models.TextField(blank=False,
-            help_text=_('The user\'s public key; can be in ssh authorized_key '
-                        'format (OLD) or in PGP PUBLIC KEY format (NEW).'))
-    description = models.CharField(max_length=255, blank=True,
-            help_text=_('Human readable info about the key, e.g. the PGP key '
-                        'uid (Alex Boonstra (TEST) <alex@example.com>).'))
+    key = models.TextField(
+        blank=False,
+        help_text=_('The user\'s public key; can be in ssh authorized_key '
+                    'format (OLD) or in PGP PUBLIC KEY format (NEW).'))
+    description = models.CharField(
+        max_length=255, blank=True,
+        help_text=_('Human readable info about the key, e.g. the PGP key '
+                    'uid (Alex Boonstra (TEST) <alex@example.com>).'))
 
     def __init__(self, *args, **kwargs):
         super(PublicKey, self).__init__(*args, **kwargs)
@@ -194,16 +196,18 @@ class Property(models.Model):
 
     TYPE_CHOICES = (
         (TYPE_PUBLIC, 'Public (unencrypted)'),
-        #FUTURE#(TYPE_PRIVATE, 'Private (encrypted)'),
+        # #FUTURE# (TYPE_PRIVATE, 'Private (encrypted)'),
         (TYPE_SHARED, 'Shared (encrypted)'),
     )
 
     created = models.DateTimeField(auto_now_add=True)
     object = models.ForeignKey(Object, related_name='properties')
-    name = AsciiField(max_length=255,
-            help_text=_('The property identifier/name.'))
-    type = models.PositiveSmallIntegerField(choices=TYPE_CHOICES,
-            default=TYPE_PUBLIC, help_text=_('Property properties ;-)'))
+    name = AsciiField(
+        max_length=255,
+        help_text=_('The property identifier/name.'))
+    type = models.PositiveSmallIntegerField(
+        choices=TYPE_CHOICES,
+        default=TYPE_PUBLIC, help_text=_('Property properties ;-)'))
 
     # Make sure you defer('value') unless you need it!
     value = BlobField(blank=True)

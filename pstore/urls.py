@@ -32,12 +32,12 @@ except ImportError:
 admin.autodiscover()
 
 
-urlpatterns = patterns('pstore',
+urlpatterns = patterns('pstore',  # noqa
     # Object identifiers and property names may need to be escaped to allow for
     # the slash (/).
 
     ###########################################################################
-    ## JSON interface, for smaller items of data.
+    # JSON interface, for smaller items of data.
     ###########################################################################
 
     # Get verbose info about a single object.
@@ -55,7 +55,7 @@ urlpatterns = patterns('pstore',
      'views_js.validate'),
 
     ###########################################################################
-    ## Binary interface, for properties (which can be large)
+    # Binary interface, for properties (which can be large)
     ###########################################################################
 
     # Get a new nonce.
@@ -77,7 +77,7 @@ urlpatterns = patterns('pstore',
      'views_bin.update_properties'),
 
     ###########################################################################
-    ## Admin interface
+    # Admin interface
     ###########################################################################
 
     # Use / as the admin path (only if this is the only app in the project)

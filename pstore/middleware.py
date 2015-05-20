@@ -71,10 +71,11 @@ class LogSqlToConsoleMiddleware(object):
 
     def process_response(self, request, response):
         if (settings.DEBUG and
-            connection.queries and
-            (not settings.MEDIA_URL or
-             not request.META['PATH_INFO'].startswith(settings.MEDIA_URL)) and
-            not request.META['PATH_INFO'].startswith('/jsi18n/')):
+                connection.queries and
+                (not settings.MEDIA_URL or
+                 not request.META['PATH_INFO'].startswith(
+                     settings.MEDIA_URL)) and
+                not request.META['PATH_INFO'].startswith('/jsi18n/')):
             print '\n' + '=' * 72
 
             if 'time' in connection.queries[0]:

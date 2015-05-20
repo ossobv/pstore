@@ -59,25 +59,20 @@ def get_object(request, object_identifier):
     else:
         obj = get_object_or_403(Object, identifier=object_identifier)
 
-    # Complicated by the permissions checks: we want the any_perm user to see
-    # all shared and public properties, but not the contents. At the bottom,
-    # the shared properties are added if no user lookup was supplied.
+    # Check if the user is allowed to view this.
     try:
         obj.allowed.get(user=request.user)
     except ObjectDoesNotExist:
         if not request.user.has_perm('object.view_any_object'):
             raise PermissionDenied()
-        is_allowed = False
-    else:
-        is_allowed = True
 
     # Get lots of info for this object.
     result = {}
 
     # Get the allowed users.
     allowed = obj.allowed.select_related('user')
-    result['users'] = dict((i.user.username, {'can_write': i.can_write})
-                           for i in allowed)
+    result['users'] = dict([(i.user.username, {'can_write': i.can_write})
+                            for i in allowed])
 
     # Get a list of properties.
     propqs = Property.objects.filter(object=obj)

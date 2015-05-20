@@ -104,10 +104,10 @@ flake8: pepclean vimmodelines
 	@# easier copy-pasting.
 	if which flake8 >/dev/null; then \
 	  find . -name '*.py' -print0 | \
-	    xargs --no-run-if-empty -0 flake8 \
-	      --max-line-length=99 --max-complexity=19 \
+	    xargs --no-run-if-empty -0 flake8 --ignore=W602 \
+	      --max-line-length=99 --max-complexity=12 \
 	      --format='%(path)s %(row)d:%(col)d [%(code)s] %(text)s'; \
-	fi
+	fi; true
 vimmodelines:
 	find . -name '*.py' -size +0 '!' -perm -u=x -print0 | \
 	  xargs --no-run-if-empty -0 grep -L '^# vim:' | \

@@ -50,7 +50,7 @@ def get_mpi(data, offset):
     Returns the MPI and the new offset.
     See: http://tools.ietf.org/html/rfc4880#section-3.2
     """
-    #return None, int((get_int(data, offset, 2) + 7) / 8) + 2
+    # #return None, int((get_int(data, offset, 2) + 7) / 8) + 2
     mpi_len = get_int(data, offset, 2)
     offset += 2
     to_process = (mpi_len + 7) // 8
@@ -63,7 +63,7 @@ def get_mpi(data, offset):
         mpi <<= 8
         mpi += ord(data[offset + j])
     # Python 3.2 and later alternative:
-    #mpi = int.from_bytes(data[offset:offset + to_process], byteorder='big')
+    # #mpi = int.from_bytes(data[offset:offset + to_process], byteorder='big')
     offset += to_process
     return mpi, offset
 
@@ -172,25 +172,25 @@ class PublicKeyPacket(object):
             offset += 1
             offset = self.parse_key_material(offset)
 
-            #md5 = hashlib.md5()
+            # #md5 = hashlib.md5()
             # Key type must be RSA for v2 and v3 public keys
             if self.pub_algorithm_type == "rsa":
                 key_id = ('%X' % self.modulus)[-8:].zfill(8)
                 self.key_id = key_id.encode('ascii')
-                #md5.update(get_int_bytes(self.modulus))
-                #md5.update(get_int_bytes(self.exponent))
+                # #md5.update(get_int_bytes(self.modulus))
+                # #md5.update(get_int_bytes(self.exponent))
             elif self.pub_algorithm_type == "elg":
                 # Of course, there are ELG keys in the wild too. This formula
                 # for calculating key_id and fingerprint is derived from an old
                 # key and there is a test case based on it.
                 key_id = ('%X' % self.prime)[-8:].zfill(8)
                 self.key_id = key_id.encode('ascii')
-                #md5.update(get_int_bytes(self.prime))
-                #md5.update(get_int_bytes(self.group_gen))
+                # #md5.update(get_int_bytes(self.prime))
+                # #md5.update(get_int_bytes(self.group_gen))
             else:
-                raise Exception("Invalid non-RSA v%d public key" %
-                        self.pubkey_version)
-            #self.fingerprint = md5.hexdigest().upper().encode('ascii')
+                raise Exception(
+                    "Invalid non-RSA v%d public key" % self.pubkey_version)
+            # #self.fingerprint = md5.hexdigest().upper().encode('ascii')
         elif self.pubkey_version == 4:
             sha1 = hashlib.sha1()
             sha1.update('%c%c%c' % (0x99, (self.length >> 8) & 0xff,
@@ -205,8 +205,9 @@ class PublicKeyPacket(object):
 
             offset = self.parse_key_material(offset)
         else:
-            raise Exception("Unsupported public key packet, version %d" %
-                    self.pubkey_version)
+            raise Exception(
+                "Unsupported public key packet, version %d" %
+                self.pubkey_version)
 
         return offset
 
@@ -233,8 +234,8 @@ class PublicKeyPacket(object):
             # Private/Experimental algorithms, just move on
             pass
         else:
-            raise Exception("Unsupported public key algorithm %d" %
-                    self.raw_pub_algorithm)
+            raise Exception(
+                "Unsupported public key algorithm %d" % self.raw_pub_algorithm)
 
         return offset
 

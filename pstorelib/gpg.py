@@ -23,7 +23,6 @@ from __future__ import absolute_import
 import os
 import re
 import sys
-from base64 import b64decode
 from getpass import getpass
 from sys import stderr
 from time import time
@@ -142,7 +141,7 @@ class GPGCrypt(object):
         TODO: if the key is not found, get it from server?
         """
         if (len(kwargs) != 1 or
-            any(i not in ('id', 'email') for i in kwargs.keys())):
+                any(i not in ('id', 'email') for i in kwargs.keys())):
             raise TypeError('get_key takes either id= or email=')
 
         # Lookup by id.
@@ -188,9 +187,11 @@ class GPGCrypt(object):
             # Send out a warning that this key is about to expires. I'm not
             # sure what the implications of expired keys are, but let's prepare
             # for the worst and warn the user at an early stage.
-            print >>stderr, ('WARNING: (sub)key %s for %s will expire in '
-                             '%.1f days' % (subkey.keyid, key.uids[0].email,
-                             float(subkey.expires - time()) / 86400.0))
+            print >>stderr, \
+                ('WARNING: (sub)key %s for %s will expire in '
+                 '%.1f days' %
+                 (subkey.keyid, key.uids[0].email,
+                  float(subkey.expires - time()) / 86400.0))
 
         # Ok. All is good.
         return key
@@ -236,7 +237,7 @@ class GPGCrypt(object):
                     raise CryptBadPrivKey()
             raise
 
-        #length = output.tell()
+        # length = output.tell()
         output.seek(0)
 
     def encrypt(self, public_key_ref=None, input=None, output=None):
@@ -250,7 +251,7 @@ class GPGCrypt(object):
 
         self.context.encrypt([public_key_ref], 1, input, output)
 
-        #length = output.tell()
+        # length = output.tell()
         output.seek(0)
 
     def default_password_cb(self, id_name_comment_email, key_ids,
