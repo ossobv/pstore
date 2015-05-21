@@ -4,6 +4,11 @@ pstore :: Python Protected Password Store
 The list of changes.
 
 
+????-??-??: 1.1.1
+-----------------
+ * Fix property list problem: superusers would see more properties
+   than expected with options -a -pl.
+
 2015-05-21: 1.1.0
 -----------------
  * Begin making a few error messages more friendly.

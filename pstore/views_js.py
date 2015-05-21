@@ -125,7 +125,8 @@ def get_object(request, object_identifier):
     # those.
     if not u:
         # Fetch property names for the properties.
-        for name, type in (Property.objects.exclude(user=None)
+        for name, type in (Property.objects.filter(object=obj)
+                           .exclude(user=None)
                            .values_list('name', 'type').distinct()):
             assert type == Property.TYPE_SHARED
 
