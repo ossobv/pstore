@@ -53,7 +53,7 @@ pyclean:
 	@printf '\n** RUNNING PEP CODE VALIDATION **\n\n'
 	@# Replace tabs with spaces, remove trailing spaces, remove trailing newlines.
 	if which pepclean >/dev/null; then \
-	  find . '(' -name '*.py' -o -name '*.html' -o -name '*.xml' ')' \
+	  find . '(' -name '*.py' -o -name '*.html' -o -name '*.xml' -o -name pstore ')' \
 	    -type f -print0 | xargs --no-run-if-empty -0 pepclean; \
 	fi
 	@# Add vim modelines.
@@ -64,7 +64,7 @@ pyclean:
 	@# Use a custom --format so the path is space separated for
 	@# easier copy-pasting.
 	if which flake8 >/dev/null; then \
-	  find . -type f '(' -name '*.py' -o -name pstore ')' -print0 | \
+	  find . '(' -name '*.py' -o -name pstore ')' -type f -print0 | \
 	    xargs --no-run-if-empty -0 flake8 --ignore=W602 \
 	      --max-line-length=99 --max-complexity=12 \
 	      --format='%(path)s %(row)d:%(col)d [%(code)s] %(text)s'; \

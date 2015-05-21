@@ -85,9 +85,9 @@ class Backend(object):
         out = {'nonce_b64': self.newnonce()}
         if allowed_only:
             out['u'] = self.user
-        if propkey_icontains:
+        if propkey_icontains is not None:
             out['propkey_icontains'] = propkey_icontains
-        if propvalue_icontains:
+        if propvalue_icontains is not None:
             out['propvalue_icontains'] = propvalue_icontains
 
         data = self._communicate(path, query=out)

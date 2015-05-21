@@ -533,7 +533,7 @@ def run_command(command, args, config):
         # sign, which we do right now.)
         search_parts = config['search'].split('=')
         if len(search_parts) == 1:
-            search_parts.append('')
+            search_parts.append(None)
         elif len(search_parts) != 2:
             raise UserError(
                 'search string can contain at most one equals sign')
@@ -546,7 +546,9 @@ def run_command(command, args, config):
         search_kwargs = {}
         if search_parts[0]:
             search_kwargs['propkey_icontains'] = search_parts[0]
-        if search_parts[1]:
+        if search_parts[1] is not None:
+            # When empty, we still want it because it signifies whether
+            # we want unencrypted properties only.
             search_kwargs['propvalue_icontains'] = search_parts[1]
         limited = not config['show_all']
 
