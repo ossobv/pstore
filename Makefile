@@ -30,10 +30,52 @@ doc: README.rst
 README.rst: README.md
 
 
+.PHONY: pep pyclean htmlclean
+
+pep: htmlclean makeclean pyclean
+
+htmlclean:
+	find . -name '*.html' | while read n; do \
+	  min=0; \
+	  sed -e 's/^\( *\).*/\1/;/^$$/d' < "$$n" | \
+	  sort -u | \
+	  while IFS= read l; do \
+	    test $$min -eq 0 && test $${#l} -ne 4 && echo "indent: $$n (offset $${#l} is not 4)" && break; \
+	    min=1; \
+	    test $$(($${#l} % 4)) -ne 0 && echo "indent: $$n (indent $${#l} is not 4)" && break; \
+	  done; true; \
+	done
+
+makeclean:
+	sed -i -e 's/^ \{1,8\}/\t/g;s/[[:blank:]]\+$$//' Makefile
+
+pyclean:
+	@printf '\n** RUNNING PEP CODE VALIDATION **\n\n'
+	@# Replace tabs with spaces, remove trailing spaces, remove trailing newlines.
+	if which pepclean >/dev/null; then \
+	  find . '(' -name '*.py' -o -name '*.html' -o -name '*.xml' ')' \
+	    -type f -print0 | xargs --no-run-if-empty -0 pepclean; \
+	fi
+	@# Add vim modelines.
+	find . -name '*.py' -size +0 '!' -perm -u=x -print0 | \
+	  xargs --no-run-if-empty -0 grep -L '^# vim:' | \
+	  xargs --no-run-if-empty -d\\n \
+	    sed -i -e '1i# vim: set ts=8 sw=4 sts=4 et ai:'
+	@# Use a custom --format so the path is space separated for
+	@# easier copy-pasting.
+	if which flake8 >/dev/null; then \
+	  find . -type f '(' -name '*.py' -o -name pstore ')' -print0 | \
+	    xargs --no-run-if-empty -0 flake8 --ignore=W602 \
+	      --max-line-length=99 --max-complexity=12 \
+	      --format='%(path)s %(row)d:%(col)d [%(code)s] %(text)s'; \
+	fi; true
+	@echo
+
+
 .PHONY: test testcopyright testdjango testint testlib testpep testtodo _testtodo
 
 # run the quickest tests first
-test: clean testcopyright testpep testlib testint testdjango testtodo
+test: clean testcopyright pep testlib testint testdjango testtodo
 	@printf '\n** ALL TESTS COMPLETED **\n\n'
 
 testint:
@@ -58,13 +100,8 @@ testlib:
 
 testcopyright:
 	@printf '\n** SEARCHING FOR MISSING COPYRIGHT TEXT **\n\n'
-	@find . -name '*.py' | xargs -d\\n grep -c ^Copyright | sed '/:0$$/!d;s/:0$$//'
-	@echo
-
-testpep:
-	@printf '\n** RUNNING PEP CODE VALIDATION **\n\n'
-	sh -c 'find . -name "*.py" -print0 | xargs -0 sed -i -e "s/ \+\$$//"'
-	-sh -c 'find . -name "*.py" | while read x; do pep8 --ignore=E125,E128 $$x; done'
+	@find . -type -f '(' -name '*.py' -o -name pstore ')' | \
+	  xargs -d\\n grep -c ^Copyright | sed '/:0$$/!d;s/:0$$//'
 	@echo
 
 testtodo: _testtodo
@@ -76,43 +113,6 @@ _testtodo:
 	@printf '\n** COUNTING TO-DO MARKS **\n\n'
 	git ls-files | grep -vF Makefile | xargs egrep 'XXX|TODO|FIXME' | sed -e 's/:.*//' | uniq -c | sort -nr
 	@echo
-
-
-.PHONY: precommit htmlindent pepclean flake8 vimmodelines
-
-precommit: htmlindent flake8
-
-htmlindent:
-	find . -name '*.html' | while read n; do \
-	  min=0; \
-	  sed -e 's/^\( *\).*/\1/;/^$$/d' < "$$n" | \
-	  sort -u | \
-	  while IFS= read l; do \
-	    test $$min -eq 0 && test $${#l} -ne 4 && echo "indent: $$n (offset $${#l} is not 4)" && break; \
-	    min=1; \
-	    test $$(($${#l} % 4)) -ne 0 && echo "indent: $$n (indent $${#l} is not 4)" && break; \
-	  done; true; \
-	done
-pepclean:
-	@# Replace tabs with spaces, remove trailing spaces, remove trailing newlines.
-	if which pepclean >/dev/null; then \
-	  find . '(' -name '*.py' -o -name '*.html' -o -name '*.xml' ')' \
-	    -type f -print0 | xargs --no-run-if-empty -0 pepclean; \
-	fi
-flake8: pepclean vimmodelines
-	@# Use a custom --format so the path is space separated for
-	@# easier copy-pasting.
-	if which flake8 >/dev/null; then \
-	  find . -name '*.py' -print0 | \
-	    xargs --no-run-if-empty -0 flake8 --ignore=W602 \
-	      --max-line-length=99 --max-complexity=12 \
-	      --format='%(path)s %(row)d:%(col)d [%(code)s] %(text)s'; \
-	fi; true
-vimmodelines:
-	find . -name '*.py' -size +0 '!' -perm -u=x -print0 | \
-	  xargs --no-run-if-empty -0 grep -L '^# vim:' | \
-	  xargs --no-run-if-empty -d\\n \
-	    sed -i -e '1i# vim: set ts=8 sw=4 sts=4 et ai:'
 
 
 .PHONY: pstore-dist django-pstore-dist pstore-full
@@ -134,7 +134,7 @@ django-pstore-dist: isclean README.rst
 	# sdist likes a setup.py
 	cat setups.py | sed -e "/^if __name__ == '__main__':/,\$$d" > setup.py
 	echo 'setup_django_pstore()' >> setup.py
-	# sdist likes a reStructuredText README.txt 
+	# sdist likes a reStructuredText README.txt
 	cp -n README.rst README.txt
 	# do the sdist
 	python setup.py sdist
