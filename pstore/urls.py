@@ -76,6 +76,10 @@ urlpatterns = patterns('pstore',  # noqa
     (r'^propupd/(?P<object_identifier>[^/]+).bin$',
      'views_bin.update_properties'),
 
+    # Search for properties.
+    (r'^propsearch.js$',
+     'views_js.search_properties'),
+
     ###########################################################################
     # Admin interface
     ###########################################################################

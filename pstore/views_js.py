@@ -45,13 +45,11 @@ def get_object(request, object_identifier):
     Note that if you want info about the properties for a different user,
     you'll need to redo the query with that user id.
     """
-    # Query strings:
-    u = request.GET.get('u', None)
-
     # Decode object_identifier.
     object_identifier = urlunquote(object_identifier)
 
     # Check authorization and existence:
+    u = request.GET.get('u', None)
     if request.user.has_perm('object.view_any_object'):
         obj = get_object_or_404(Object, identifier=object_identifier)
     elif u != request.user.username:
@@ -144,17 +142,16 @@ def get_object(request, object_identifier):
 @require_GET
 @audit_view('lists objects+info')
 def list_objects(request):
-    # Query strings:
-    q = request.GET.get('q', None)  # filter against identifier
-    u = request.GET.get('u', None)  # filter against allowed (allow multiple?)
-    v = request.GET.get('v', None) and True  # list more info
-
     # Check authorization and existence:
     u = request.GET.get('u', None)
     if request.user.has_perm('object.view_any_object'):
         pass
     elif u != request.user.username:
         raise PermissionDenied()
+
+    # Query strings:
+    q = request.GET.get('q', None)  # filter against identifier
+    v = request.GET.get('v', None) and True  # list more info
 
     # Query:
     qs = Object.objects.all()  # no ordering here, that's up to the client
@@ -187,6 +184,64 @@ def list_objects(request):
                       for i in qs.values_list('identifier', flat=True))
 
     return JsonResponse(request, result)
+
+
+@nonce_required
+@require_GET
+@audit_view('search properties')
+def search_properties(request):
+    # Check authorization and existence:
+    u = request.GET.get('u', None)
+    if request.user.has_perm('object.view_any_object'):
+        pass
+    elif u != request.user.username:
+        raise PermissionDenied()
+
+    # Query:
+    qs = Property.objects.all()  # no ordering here, that's up to the client
+    if u:
+        qs = qs.filter(object__allowed__user__username=u)
+
+    # More queries (observe that "icontains" search depends on the DB
+    # backend to work insensitively; MySQL blob does *not* work).
+    if 'propkey_icontains' in request.GET:
+        qs = qs.filter(name__icontains=request.GET['propkey_icontains'])
+    if 'propvalue_icontains' in request.GET:
+        # Yuck. That length should've been memoized.
+        qs = (qs
+              .filter(type=Property.TYPE_PUBLIC,
+                      value__icontains=request.GET['propvalue_icontains'])
+              .extra(where=['LENGTH(value) <= 2048']))
+
+    # First sanity check:
+    if qs.count() > 100:
+        raise PermissionDenied('too many results')
+
+    # Fetch extra properties we need:
+    qs = qs.extra(select={'size': 'LENGTH(value)'})
+    qs = qs.select_related('object')
+    qs = qs.values_list('id', 'object__identifier', 'name', 'type', 'size')
+
+    machines = {}
+    for id_, identifier, propkey, proptype, size in qs:
+        propvalue = None
+        if proptype == Property.TYPE_PUBLIC and size <= 2048:
+            propvalue = (Property.objects.filter(id=id_)
+                         .values_list('value', flat=True)[0])
+
+        info = {
+            'data': propvalue,
+            'size': size,
+            'enctype': ('none', 'any')[proptype != Property.TYPE_PUBLIC],
+        }
+        if propvalue:
+            info['data'] = b64encode(propvalue)
+
+        if identifier not in machines:
+            machines[identifier] = {'properties': {}}
+        machines[identifier]['properties'][propkey] = info
+
+    return JsonResponse(request, machines)
 
 
 @require_GET

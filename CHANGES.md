@@ -10,6 +10,7 @@ The list of changes.
  * Alter property listing to show multiline properties in an indented
    fashion.
  * A bit of cleanup.
+ * Add property search using -s.
 
 2013-10-10: 1.0.3
 -----------------

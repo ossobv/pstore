@@ -79,6 +79,28 @@ class Backend(object):
         none = self._communicate(path, data=out, files=files)
         assert none is None
 
+    def propsearch(self, allowed_only=True, propkey_icontains=None,
+                   propvalue_icontains=None):
+        path = '/propsearch.js'
+        out = {'nonce_b64': self.newnonce()}
+        if allowed_only:
+            out['u'] = self.user
+        if propkey_icontains:
+            out['propkey_icontains'] = propkey_icontains
+        if propvalue_icontains:
+            out['propvalue_icontains'] = propvalue_icontains
+
+        data = self._communicate(path, query=out)
+        for machine, properties in data.items():
+            for propkey, info in properties['properties'].items():
+                if info['data']:
+                    info['data'] = CryptoReader(data=b64decode(info['data']),
+                                                enctype=info['enctype'])
+                else:
+                    del info['data']
+
+        return data
+
     def validate(self):
         path = '/validate.js'
         out = {'nonce_b64': self.newnonce()}

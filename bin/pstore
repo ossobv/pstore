@@ -39,6 +39,11 @@ from pstorelib.server import Backend
 SSH_ASKPASS_APP = '/usr/local/bin/ssh_echopass'
 SSH_ASKPASS_PRELOAD = '/usr/local/lib/ssh_askpass.so'
 
+ALPHA = ('ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+         'abcdefghijklmnopqrstuvwxyz')
+NUM = '0123456789'
+ALNUM = ALPHA + NUM
+
 
 class PStoreInterface(object):
     PASSWORD_PROPERTY = 'password'
@@ -109,6 +114,13 @@ class PStoreInterface(object):
         '''Get the available properties, possibly with contents.'''
         object = self.backend.get_object(objectid, allowed_only=allowed_only)
         return object['properties']
+
+    def search_properties(self, allowed_only=True, propkey_icontains=None,
+                          propvalue_icontains=None):
+        '''Search available properties.'''
+        return self.backend.propsearch(
+            allowed_only=allowed_only, propkey_icontains=propkey_icontains,
+            propvalue_icontains=propvalue_icontains)
 
     ###########################################################################
     # REGULAR INTERFACE
@@ -248,10 +260,11 @@ def parse_options(args):
     try:
         optlist, args = gnu_getopt(
             [args[0]] + rc_args + args[1:],  # inject defaults
-            'hcPp:' + 'ak:l:u:v',  # command options + configuration options
+            'hcPp:' + 'ak:l:s:u:v',  # command options + configuration options
             ('help', 'create', 'chpass', 'lookup-machine', 'propedit',
              'consistency-check') +
-            ('all', 'private-key=', 'store-url=', 'user=', 'verbose')
+            ('all', 'private-key=', 'search=', 'store-url=', 'user=',
+             'verbose')
         )
     except GetoptError, e:
         raise UserError(unicode(e))
@@ -273,6 +286,7 @@ def parse_options(args):
         elif option in ('--create', '-c',
                         '--change-password', '-P',
                         '--propedit', '-p',
+                        '--search', '-s',
                         '--lookup-machine',
                         '--consistency-check'):
             if not command:
@@ -292,11 +306,14 @@ def parse_options(args):
                     elif arg == 'e':
                         command = 'propsetenc'
                     else:
-                        assert False
+                        raise UserError('Propedit option takes g, s, e or l')
+                elif option in ('--search', '-s'):
+                    command = 'search'
+                    config['search'] = arg  # see below for format
                 elif option in ('--consistency-check',):
                     command = 'check_consistency'
                 else:
-                    assert False
+                    raise UserError('Unknown command; programming error')
             elif command != 'help':
                 command = 'multiple_commands'
 
@@ -365,7 +382,7 @@ def parse_allow_revoke(args):
         elif arg[0] == '^':
             revoke.append(arg[1:].lower())
         else:
-            assert False
+            assert False, 'Programming error'
     return allow, revoke
 
 
@@ -374,7 +391,7 @@ def run_command(command, args, config):
         print >>sys.stderr, ('- Executing "%s" on stores %r as user "%s"' %
                              (command, config['store_urls'], config['user']))
 
-    if command == 'check_consistency':
+    if command in ('check_consistency', 'search'):
         pass
     elif args:
         name = args.pop(0).lower()
@@ -383,7 +400,7 @@ def run_command(command, args, config):
     else:
         raise UserError('need machine name')
 
-    if command in ('check_consistency', 'proplist'):
+    if command in ('check_consistency', 'proplist', 'search'):
         if len(args):
             raise UserError('unexpected argument')
     elif command in ('propget', 'propset', 'propsetenc'):
@@ -498,13 +515,71 @@ def run_command(command, args, config):
                                           allowed_only=limited, verbose=True)
             if not machines:
                 raise UserError('no visible machines match %s' % (name,))
-            fmt = '%s %-25s %s'
+            fmt = '%1s %-25s %s'
             print fmt % (' ', 'Machine', 'User access')
             print '-' * 72
             for machine in sorted(machines.keys()):
                 properties = machines[machine]
                 print fmt % ('+', machine,
                              ', '.join(sorted(properties['users'].keys())))
+
+    elif command == 'search':
+        # Search uses KEY=VALUE search where KEY and VALUE are substring
+        # matched. In the future we may want to open the possibility to
+        # use regex, in that case we could accept certain prefixes,
+        # like: ~ = regex, ^ = startswith
+        # But we'd have to take care when splitting the KEY from the
+        # VALUE. (Possibly by simply accepting at most one equals
+        # sign, which we do right now.)
+        search_parts = config['search'].split('=')
+        if len(search_parts) == 1:
+            search_parts.append('')
+        elif len(search_parts) != 2:
+            raise UserError(
+                'search string can contain at most one equals sign')
+        if search_parts[0] and search_parts[0][0] not in ALNUM:
+            raise UserError(
+                'search format must not start with non-alnum character; '
+                'for forward compatibility')
+        if not search_parts[0] and not search_parts[1]:
+            raise UserError('refusing to search for the empty string')
+        search_kwargs = {}
+        if search_parts[0]:
+            search_kwargs['propkey_icontains'] = search_parts[0]
+        if search_parts[1]:
+            search_kwargs['propvalue_icontains'] = search_parts[1]
+        limited = not config['show_all']
+
+        properties = pstore.search_properties(
+            allowed_only=limited, **search_kwargs)
+        if not properties:
+            raise UserError('no search results')
+
+        fmt = '%1s %-25s %s'
+        print fmt % (' ', 'Machine', 'Property and value')
+        print '-' * 72
+        for machine in sorted(properties.keys()):
+            props = properties[machine]['properties']
+            for i, propname in enumerate(sorted(props.keys())):
+                if i == 0:
+                    fmt_args = ['+', machine, propname, '=']
+                else:
+                    fmt_args = ['', '', propname, '=']
+                info = props[propname]
+                if 'data' in info:
+                    assert info['enctype'] == 'none'
+                    data = info['data'].decrypt_with(None).read()
+                    if len(data) < 80:
+                        fmt_args.append(data)
+                    else:
+                        fmt_args.append('(%d byte document)' % info['size'])
+                elif info['enctype'] != 'none':
+                    fmt_args.append('(%d byte encrypted)' % info['size'])
+                else:
+                    fmt_args.append('(%d byte document)' % info['size'])
+                fmt_args[2:] = [' '.join(fmt_args[2:])]
+
+                print fmt % tuple(fmt_args)
 
     elif command == 'check_consistency':
         errors = pstore.validate()
@@ -668,6 +743,9 @@ Usage:                                                      ||
   echo Under the cupboard | pstore -ps machine location
     (add unencrypted location property to machine; use -pl to list, -pg
      to get and -pe to store *encrypted* properties)
+  pstore -s [propkey][=propvalue]
+    (search for properties, only public property values can be searched,
+     using substring matching, case sensitivity depends on backend)
 
 Command options:
 %(commands)s
