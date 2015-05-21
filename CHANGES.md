@@ -4,11 +4,12 @@ pstore :: Python Protected Password Store
 The list of changes.
 
 
-????-??-??: 1.0.4a
+2015-05-??: 1.1.0a
 ------------------
  * Begin making a few error messages more friendly.
  * Alter property listing to show multiline properties in an indented
    fashion.
+ * A bit of cleanup.
 
 2013-10-10: 1.0.3
 -----------------

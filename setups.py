@@ -2,7 +2,7 @@
 # vim: set ts=8 sw=4 sts=4 et ai tw=79:
 """
 pstore setup -- Python Protected Password Store (setup)
-Copyright (C) 2012,2013  Walter Doekes <wdoekes>, OSSO B.V.
+Copyright (C) 2012,2013,2015  Walter Doekes <wdoekes>, OSSO B.V.
 
 This script is called setups.py and not setup.py. It contains two separate
 setup calls, one for `pstore` and one for `django-pstore`.
