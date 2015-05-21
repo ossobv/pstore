@@ -86,8 +86,6 @@ class Backend(object):
         return statusdata['errors']
 
     def _communicate(self, path, query=None, data=None, files=None):
-        first_exception = None
-
         # urlencode is nice because it will accept boths dicts and lists of
         # tuples.
         query_string = ''
@@ -123,6 +121,15 @@ class Backend(object):
             content_type = 'application/x-www-form-urlencoded'
             data = urlencode(data)
             content_length = len(data)
+        else:
+            content_type, content_length = None, None
+
+        return self._try_servers(path, query_string, data, content_type,
+                                 content_length)
+
+    def _try_servers(self, path, query_string, data, content_type,
+                     content_length):
+        first_exception = None
 
         for store_url in self.urls:
             if self.verbose:
@@ -130,45 +137,9 @@ class Backend(object):
                                      (store_url, path))
 
             try:
-                request = Request(str(store_url + path + query_string))
-                if data is not None:
-                    request.add_header('Content-Type', content_type)
-                    request.add_header('Content-Length', content_length)
-                    request.add_data(data)
-
-                file = urlopen(request)
-                status = file.getcode()
-                assert status in (200, 204)  # OK, OK-no-data
-
-                # Break early if we're dealing with no-data.
-                if status == 204:
-                    try:
-                        nothing = file.read()
-                        assert nothing == ''
-                    finally:
-                        file.close()
-                    data = None
-
-                # JSON data?
-                elif path.endswith('.js'):
-                    try:
-                        data = from_jsonfile(file)
-                    finally:
-                        file.close()
-
-                # Binary data?
-                elif path.endswith('.bin'):
-                    # We expect this to be set!
-                    length = int(file.headers.getheader('content-length'))
-                    enctype = file.headers.getheader('x-encryption', 'none')
-                    # No file closing here.. the cryptoreader gets to use it.
-                    data = CryptoReader(fp=file, length=length,
-                                        enctype=enctype)
-
-                # Unknown data?
-                else:
-                    file.close()
-                    raise NotImplementedError(path)
+                data = self._try_server(
+                    store_url, path, query_string, data, content_type,
+                    content_length)
 
             except HTTPError, e:
                 if not first_exception:
@@ -200,6 +171,50 @@ class Backend(object):
             exception = BackendDown('could not connect to %s' % (first_url,))
             exception.__cause__ = first_exception[1]  # PEP 3134 style
             raise exception, None, first_exception[2]  # pep8(1) complains W602
+
+        return data
+
+    def _try_server(self, store_url, path, query_string, data, content_type,
+                    content_length):
+        request = Request(str(store_url + path + query_string))
+        if data is not None:
+            request.add_header('Content-Type', content_type)
+            request.add_header('Content-Length', content_length)
+            request.add_data(data)
+
+        file = urlopen(request)
+        status = file.getcode()
+        assert status in (200, 204)  # OK, OK-no-data
+
+        # Break early if we're dealing with no-data.
+        if status == 204:
+            try:
+                nothing = file.read()
+                assert nothing == ''
+            finally:
+                file.close()
+            data = None
+
+        # JSON data?
+        elif path.endswith('.js'):
+            try:
+                data = from_jsonfile(file)
+            finally:
+                file.close()
+
+        # Binary data?
+        elif path.endswith('.bin'):
+            # We expect this to be set!
+            length = int(file.headers.getheader('content-length'))
+            enctype = file.headers.getheader('x-encryption', 'none')
+            # No file closing here.. the cryptoreader gets to use it.
+            data = CryptoReader(fp=file, length=length,
+                                enctype=enctype)
+
+        # Unknown data?
+        else:
+            file.close()
+            raise NotImplementedError(path)
 
         return data
 
