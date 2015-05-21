@@ -382,6 +382,8 @@ def urlquote(param):
     """
     # Safe '' means that there are very few characters that do not get
     # escaped.
+    if isinstance(param, unicode):
+        param = param.encode('utf-8')
     return quote(param, safe='').replace('%', '=')
 
 
@@ -389,7 +391,10 @@ def urlunquote(param):
     """
     Undo the doings of urlquote.
     """
-    return unquote(param.replace('=', '%'))
+    param = unquote(param.replace('=', '%'))
+    if isinstance(param, unicode):
+        param = param.encode('latin1')  # unquote did not parse utf8
+    return param.decode('utf-8')
 
 
 if __name__ == '__main__':
