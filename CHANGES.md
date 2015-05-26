@@ -4,7 +4,7 @@ pstore :: Python Protected Password Store
 The list of changes.
 
 
-????-??-??: 1.1.1
+2015-05-26: 1.1.1
 -----------------
  * Fix property list problem: superusers would see more properties
    than expected with options -a -pl.
