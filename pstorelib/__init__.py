@@ -25,5 +25,5 @@ __all__ = ('VERSION', 'VERSION_STRING', 'bytes', 'crypt', 'exceptions',
            'server')
 # http://docs.python.org/2/tutorial/modules.html#importing-from-a-package
 
-VERSION = (1, 1, 1)
-VERSION_STRING = '1.1.1'
+VERSION = (1, 1, 2)
+VERSION_STRING = '1.1.2'

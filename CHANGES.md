@@ -4,6 +4,11 @@ pstore :: Python Protected Password Store
 The list of changes.
 
 
+2015-10-14: 1.1.2
+-----------------
+ * Remove `download_url` from setup.py as part of PEP470 change for
+   PyPI.
+
 2015-05-26: 1.1.1
 -----------------
  * Fix property list problem: superusers would see more properties
