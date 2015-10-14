@@ -64,7 +64,6 @@ defaults = {
     'author': 'Walter Doekes',
     'author_email': 'wjdoekes+pstore@osso.nl',
     'url': 'https://github.com/ossobv/pstore#jump',
-    'download_url': 'https://downloads.osso.nl/Python/pstore/',
     'license': 'LGPLv3',
     'long_description': long_description,
     'classifiers': [
