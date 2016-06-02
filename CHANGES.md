@@ -4,6 +4,12 @@ pstore :: Python Protected Password Store
 The list of changes.
 
 
+2016-06-02: 1.1.3
+-----------------
+ * Add example workaround in settings.template so we can run with
+   DEBUG=True on MySQL without getting "Invalid utf8 character string"
+   errors. Reported by Devhouse Spindle.
+
 2015-10-14: 1.1.2
 -----------------
  * Remove `download_url` from setup.py as part of PEP470 change for
