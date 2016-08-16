@@ -76,10 +76,11 @@ if DATABASES['default']['ENGINE'].endswith('.mysql'):
         connections.Connection.show_warnings = new_show_warnings
 
     DATABASES['default']['OPTIONS'] = {
+        # On older MySQL (<5.6) you may want to add
+        # "SET storage_engine=InnoDB;" below.
         'init_command':
             ("SET innodb_strict_mode=ON;"
-             "SET sql_mode='ANSI,STRICT_ALL_TABLES';"
-             "SET storage_engine=INNODB;"),
+             "SET sql_mode='ANSI,STRICT_ALL_TABLES';"),
     }
 elif DATABASES['default']['ENGINE'].endswith('.sqlite3'):
     DATABASES['default']['NAME'] = DATABASES['default']['NAME'] + '.db'
