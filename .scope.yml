@@ -4,4 +4,16 @@
 component_depth: 1
 
 languages:
-  - python
+  - name: python
+
+    production:
+      include:
+        # The CLI app lacks extension.
+        - /bin/pstore
+      exclude:
+        - /contrib/.*
+        - /pstore/tests/.*
+
+    test:
+      include:
+        - /pstore/tests/.*
