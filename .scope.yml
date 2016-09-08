@@ -13,7 +13,11 @@ languages:
       exclude:
         - /contrib/.*
         - /pstore/tests/.*
+        # TEST TEST
+        - /pstorelib/.*
 
     test:
       include:
         - /pstore/tests/.*
+      exclude:
+        - /contrib/.*
