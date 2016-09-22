@@ -52,29 +52,6 @@ DATABASES = {
 }
 
 if DATABASES['default']['ENGINE'].endswith('.mysql'):
-    if DEBUG:
-        # Here we monkey patch MySQL so we won't get this warning:
-        # Warning    1300    Invalid utf8 character string: 'FF'
-        #
-        # http://bugs.mysql.com/bug.php?id=78851
-        # > mysql gives UTF8 warnings then we're inserting binary data
-        # http://bugs.mysql.com/bug.php?id=80404
-        # > sql_warnings setting is broken in all MySQL 5.x versions
-        # https://code.djangoproject.com/ticket/12293
-        # > attempt to silence MySQL notices in Django
-        #
-        # Reproduce:
-        # > printf "insert into pstore_nonce \
-        #   (created, user_id, value, encrypted) values \
-        #   (now(), 1, 'abc', '\xff'); show warnings;" | ./manage dbshell
-        from MySQLdb import connections
-        orig_show_warnings = connections.Connection.show_warnings
-        def new_show_warnings(self):
-            # This function drops all INT-1300 warnings.
-            warnings = orig_show_warnings(self)
-            return tuple(i for i in warnings if i[1] != 1300)
-        connections.Connection.show_warnings = new_show_warnings
-
     DATABASES['default']['OPTIONS'] = {
         # On older MySQL (<5.6) you may want to add
         # "SET storage_engine=InnoDB;" below.

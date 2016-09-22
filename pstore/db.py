@@ -82,6 +82,11 @@ class BlobField(models.Field):
     if not _is_mysql:
         __metaclass__ = models.SubfieldBase
 
+        def get_prep_value(self, value):
+            if value is None:
+                return None
+            return b64encode(value)
+
     def to_python(self, value):
         """
         Differentiates between unicode and binary strings! unicode values are
@@ -100,17 +105,15 @@ class BlobField(models.Field):
         value = self._get_val_from_obj(obj)
         return unicode(b64encode(value))
 
-    if _is_mysql:
-        def db_type(self, **kwargs):
+    def db_type(self, connection):
+        if connection.vendor == 'mysql':
             # We use a LONGBLOB which can hold up to 4GB of bytes. A
             # MEDIUMBLOB of max 16MB should probably be enough, but we
             # don't want to add an arbitrary limit there.
             return 'LONGBLOB'
-    else:
-        def get_prep_value(self, value):
-            if value is None:
-                return None
-            return b64encode(value)
+        return 'BLOB'
 
-        def db_type(self, **kwargs):
-            return 'BLOB'
+    def get_placeholder(self, value, connection):
+        if connection.vendor == 'mysql' and value is not None:
+            return '_binary%s'
+        return '%s'
