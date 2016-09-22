@@ -12,12 +12,8 @@ languages:
         - /bin/pstore
       exclude:
         - /contrib/.*
-        - /pstore/tests/.*
-        # TEST TEST
-        - /pstorelib/.*
+        - /setups.py
 
     test:
       include:
         - /pstore/tests/.*
-      exclude:
-        - /contrib/.*
