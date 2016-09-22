@@ -1,7 +1,7 @@
 # vim: set ts=8 sw=4 sts=4 et ai tw=79:
 """
 pstore-lib -- Python Protected Password Store (Library)
-Copyright (C) 2012,2013,2015  Walter Doekes <wdoekes>, OSSO B.V.
+Copyright (C) 2012,2013,2015,2016  Walter Doekes <wdoekes>, OSSO B.V.
 
     This library is free software; you can redistribute it and/or modify it
     under the terms of the GNU Lesser General Public License as published by
@@ -31,6 +31,11 @@ try:
     from gpgme import ERR_CANCELED, Context, GpgmeError
 except ImportError, e:
     raise ImportError(e.args[0] + '\n\n*HINT* apt-get install python-gpgme')
+
+try:
+    from gpgme import PINENTRY_MODE_LOOPBACK
+except ImportError:
+    PINENTRY_MODE_LOOPBACK = None
 
 from pstorelib.bytes import BytesIO
 from pstorelib.exceptions import (CryptError, CryptBadPassword,
@@ -108,6 +113,8 @@ class GPGCrypt(object):
         self.password_cb = self.default_password_cb
         # Init a GPG context.
         self.context = Context()
+        if PINENTRY_MODE_LOOPBACK is not None:
+            self.context.pinentry_mode = PINENTRY_MODE_LOOPBACK
         self.context.passphrase_cb = self._password_cb  # wrap the other cb
         # No ascii armor stuff. We'll juggle some base64 around ourselves.
         self.context.armor = False
