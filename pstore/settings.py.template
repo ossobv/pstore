@@ -1,7 +1,7 @@
 # vim: set syn=python ts=8 sw=4 sts=4 et ai tw=79:
 """
 django-pstore -- Python Protected Password Store (Django app)
-Copyright (C) 2010,2012,2013  Walter Doekes <wdoekes>, OSSO B.V.
+Copyright (C) 2010,2012,2013,2015,2016  Walter Doekes <wdoekes>, OSSO B.V.
 
     This application is free software; you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published
@@ -22,6 +22,7 @@ from .pstore_settings import *  # noqa
 
 import os
 import pwd
+import sys
 
 _OSUSER = pwd.getpwuid(os.getuid())[0]
 
@@ -50,6 +51,10 @@ DATABASES = {
         'PORT': '',
     },
 }
+
+if (sys.argv[1:2] == ['test']
+        and os.environ.get('SQLITE_TESTS') not in (None, '', '0')):
+    DATABASES['default']['ENGINE'] = 'django.db.backends.sqlite3'
 
 if DATABASES['default']['ENGINE'].endswith('.mysql'):
     DATABASES['default']['OPTIONS'] = {
