@@ -113,7 +113,9 @@ class GPGCrypt(object):
         self.password_cb = self.default_password_cb
         # Init a GPG context.
         self.context = Context()
-        if PINENTRY_MODE_LOOPBACK is not None:
+        # Enable PINENTRY_MODE_LOOPBACK only if we *want* to bypass the
+        # gpg-agent dialog...
+        if False and PINENTRY_MODE_LOOPBACK is not None:
             self.context.pinentry_mode = PINENTRY_MODE_LOOPBACK
         self.context.passphrase_cb = self._password_cb  # wrap the other cb
         # No ascii armor stuff. We'll juggle some base64 around ourselves.
