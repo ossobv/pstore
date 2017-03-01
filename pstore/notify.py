@@ -221,17 +221,28 @@ def notify_user_deletion(user, publickey, objects):
     # Do we have an admin log? Then store the flatbody there. We don't
     # want it mailed to an insecure location if we can help it.
     ct = ContentType.objects.get_for_model(user)
+    extra_message = ''
     try:
-        entry = LogEntry.objects.get(content_type=ct, object_id=user.id,
-                                     action_flag=DELETION)
+        entry = LogEntry.objects.get(
+            content_type=ct, object_id=user.id,
+            action_flag=DELETION)
+    except LogEntry.MultipleObjectsReturned:
+        # In case we reset the auto_increment, we may be looking at old
+        # entries as well. Take the newest one.
+        entry = LogEntry.objects.filter(
+            content_type=ct, object_id=user.id,
+            action_flag=DELETION).latest('id')
+        extra_message = (
+            '\nWARNING: Multiple LogEntry items found for UID %r\n' % user.pk)
     except LogEntry.DoesNotExist:
         entry = None
-    else:
+
+    if entry:
         entry.change_message += flatbody
         entry.save()
         flatbody = ('User %s was deleted from the pstore!\n\n'
                     'Details about removed objects can be found in the admin '
-                    'log %d.\n' % (user.username, entry.id))
+                    'log %d.\n%s' % (user.username, entry.id, extra_message))
 
     # Send out a mail.
     if settings.DEBUG:
