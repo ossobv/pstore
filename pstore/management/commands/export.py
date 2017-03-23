@@ -1,4 +1,5 @@
 from decimal import Decimal
+from optparse import make_option
 
 from django.contrib.auth.models import User
 from django.core.management.base import BaseCommand
@@ -21,15 +22,31 @@ except NameError:
 else:
     unistr = unicode
 
-# List both public and private properties.
-SHOW_ENCRYPTED = True
-# List all common properties for which at least N objects exist with
-# that property.
-MIN_PROPERTIES = 8
-
 
 class Command(BaseCommand):
+    help = __doc__ = """
+        Make a two dimensional CSV export of objects and properties.
+
+        Lists all objects in the DB, with all users and whether they
+        have access. Also lists the most common properties and their
+        values.
+    """.replace('\n        ', '\n').strip()
+
+    option_list = BaseCommand.option_list + (
+        make_option(
+            '--with-encrypted', action='store_true', default=False, help=(
+                'Also list encrypted properties (without value obviously)')),
+        make_option(
+            '--common-if-gte', action='store', type=int,
+            default=8, metavar='N', help=(
+                'Properties are considered common if used by at least N '
+                'objects (greater than or equal)')),
+    )
+
     def handle(self, **kwargs):
+        self.show_encrypted = kwargs['with_encrypted']
+        self.min_properties = kwargs['common_if_gte']
+
         self.stdout.write(self.get_head_row())
         for obj in Object.objects.order_by('identifier'):
             self.stdout.write(self.get_row(obj))
@@ -113,9 +130,9 @@ class Command(BaseCommand):
             qs = (
                 Property.objects.values_list('name', flat=True)
                 .annotate(Count('object', distinct=True))
-                .filter(object__count__gte=MIN_PROPERTIES)
+                .filter(object__count__gte=self.min_properties)
                 .order_by('-object__count', 'name'))
-            if not SHOW_ENCRYPTED:
+            if not self.show_encrypted:
                 qs = qs.filter(type=Property.TYPE_PUBLIC)
             self._get_property_names = tuple(qs)
         return self._get_property_names
