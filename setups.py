@@ -18,6 +18,8 @@ import re
 # option: 'install_requires'
 from distutils.core import setup
 from distutils.version import LooseVersion  # strict is too ~, even for me
+from distutils.command.build_py import build_py
+_find_package_modules_orig = build_py.find_package_modules
 
 # TODO: see this
 # See also, for metadata help:
@@ -138,19 +140,15 @@ def setup_django_pstore():
             raise RuntimeError('Included local settings! Aborting!')
 
 
-# Hack to overcome deficiency in distutils/setuptools -- inability to exclude
-# specific files. Modify the build process to exclude specific files from the
-# build. Adapted to assert that the hack still works.
-#
-# Original:
-# http://xylld.wordpress.com/2009/09/24/python-setuptools-workaround-for-\
-#        ignore-specific-files/
-
-from distutils.command.build_py import build_py
-_find_package_modules_orig = build_py.find_package_modules
-
-
 def find_package_modules(self, package, package_dir):
+    """
+    Hack to overcome deficiency in distutils/setuptools -- inability to
+    exclude specific files. Modify the build process to exclude specific
+    files from the build. Adapted to assert that the hack still works.
+
+    Original: http://xylld.wordpress.com/2009/09/24/
+                python-setuptools-workaround-for-ignore-specific-files/
+    """
     # Make a note that this still works.
     global EXCLUDE_FILES_HACK
     EXCLUDE_FILES_HACK = True
@@ -159,8 +157,8 @@ def find_package_modules(self, package, package_dir):
     for pkg, module, fname in EXCLUDE_FILES:
         if (pkg, module, fname) in modules:
             modules.remove((pkg, module, fname))
-            print ('excluding pkg = %s, module = %s, fname = %s' %
-                   (pkg, module, fname))
+            print('excluding pkg = %s, module = %s, fname = %s' % (
+                (pkg, module, fname)))
     return modules
 
 build_py.find_package_modules = find_package_modules

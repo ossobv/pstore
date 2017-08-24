@@ -104,7 +104,7 @@ class PStoreInterface(object):
             fp = self.propget(identifier, property)
         else:
             if info['enctype'] == 'none':
-                print >>sys.stderr, 'WARNING: password as public property?'
+                sys.stderr.write('WARNING: password as public property?\n')
             fp = decrypt_with(None)
 
         password = fp.read()
@@ -154,7 +154,7 @@ class PStoreInterface(object):
         for property, fp in properties.items():
             writer = CryptoWriter(fp=fp)
             if 'PSTORE_NOINPUT' not in os.environ:
-                print >>sys.stderr, 'INFO: encrypting..'
+                sys.stderr.write('INFO: encrypting..\n')
             for user in allowed_users:
                 encryptedfp = writer.encrypt_with(keys[user])
                 files.append((property, user, encryptedfp))
@@ -192,7 +192,7 @@ class PStoreInterface(object):
                 if self.config['user'] not in data['users'].keys():
                     # This will fail.. but we'll let the server do this check.
                     # That's where the check should happen anyway.
-                    print >>sys.stderr, 'WARNING: this will fail'
+                    sys.stderr.write('WARNING: this will fail\n')
                 # Set the allowed users list.
                 allowed_users = data['users']
                 del data
@@ -205,7 +205,7 @@ class PStoreInterface(object):
             files = []
             writer = CryptoWriter(fp=fp)
             if 'PSTORE_NOINPUT' not in os.environ:
-                print >>sys.stderr, 'INFO: encrypting..'
+                sys.stderr.write('INFO: encrypting..\n')
             for user in allowed_users:
                 encryptedfp = writer.encrypt_with(keys[user])
                 files.append((property, user, encryptedfp))
@@ -230,7 +230,7 @@ def parse_pstorerc():
     usage."
     '''
     # TODO: emit warning if .pstorerc is found but not readable
-    rc_args, file, lines = [], None, None
+    rc_args, file = [], None
     try:
         file = open(os.environ['HOME'] + '/.pstorerc', 'r')
         rc_args.extend(file.read().split())
@@ -254,8 +254,8 @@ def parse_options(args):
     has_default_store_url = any(i.startswith('--store-url') for i in rc_args)
     has_new_store_url = any(i.startswith('--store-url') for i in args[1:])
     if has_default_store_url and has_new_store_url:
-        msg = 'WARNING: setting --store-url does not override .pstorerc'
-        print >>sys.stderr, msg  # FIXME?
+        sys.stderr.write(  # FIXME?
+            'WARNING: setting --store-url does not override .pstorerc\n')
 
     try:
         optlist, args = gnu_getopt(
@@ -266,7 +266,7 @@ def parse_options(args):
             ('all', 'private-key=', 'search=', 'store-url=', 'user=',
              'verbose')
         )
-    except GetoptError, e:
+    except GetoptError as e:
         raise UserError(unicode(e))
 
     config = {
@@ -353,9 +353,10 @@ def parse_options(args):
             else:
                 config['ssh_host'] = arg
             del machine_name
-            print 'Attempting ssh login with arg:', config['ssh_host']
-            print ('(if you see "Host key verification failed", you need to '
-                   'ssh manually)')
+            print('Attempting ssh login with arg: {0}'.format(
+                config['ssh_host']))
+            print('(if you see "Host key verification failed", '
+                  'you need to ssh manually)')
 
         else:
             raise NotImplementedError('Unhandled option', option)
@@ -375,8 +376,9 @@ def parse_allow_revoke(args):
     allow, revoke = [], []
     for arg in args:
         if len(arg) < 2 or arg[0] not in ('+', '^'):
-            print >>sys.stderr, ('WARNING: skipping unparseable allow/revoke '
-                                 'statement %s' % (arg,))
+            sys.stderr.write(
+                'WARNING: skipping unparseable allow/revoke '
+                'statement %s\n' % (arg,))
         elif arg[0] == '+':
             allow.append(arg[1:].lower())
         elif arg[0] == '^':
@@ -388,8 +390,8 @@ def parse_allow_revoke(args):
 
 def run_command(command, args, config):
     if config['verbose']:
-        print >>sys.stderr, ('- Executing "%s" on stores %r as user "%s"' %
-                             (command, config['store_urls'], config['user']))
+        sys.stderr.write('- Executing "%s" on stores %r as user "%s"\n' % (
+            command, config['store_urls'], config['user']))
 
     if command in ('check_consistency', 'search'):
         pass
@@ -453,7 +455,7 @@ def run_command(command, args, config):
                                      allowed_only=allowed_only,
                                      verbose=False)
         for objectid in sorted(objects.keys()):
-            print objectid
+            print(objectid)
 
     elif command == 'propget':
         # TODO: Add the possibility to replace stdout with a file..
@@ -476,10 +478,10 @@ def run_command(command, args, config):
                 info = 'size=%d' % (value['size'],)
                 if value['enctype'] == 'none':
                     info += ', unencrypted'
-                print '%s (%s)' % (property, info)
+                print('%s (%s)' % (property, info))
         else:
             for property in sorted(properties.keys()):
-                print property
+                print(property)
 
     elif command in ('propset', 'propsetenc'):
         # TODO: Add the possibility to replace stdin with a file..
@@ -487,7 +489,7 @@ def run_command(command, args, config):
         # Warn when storing unencrypted properties.
         if command == 'propset':
             if 'PSTORE_NOINPUT' not in os.environ:
-                print >>sys.stderr, 'NOTICE: not encrypting the value'
+                sys.stderr.write('NOTICE: not encrypting the value\n')
         # Set allowed users automatically.
         allowed_users = (None, True)[command == 'propsetenc']
         pstore.propset(name, property, fp, allowed_users=allowed_users)
@@ -516,12 +518,13 @@ def run_command(command, args, config):
             if not machines:
                 raise UserError('no visible machines match %s' % (name,))
             fmt = '%1s %-25s %s'
-            print fmt % (' ', 'Machine', 'User access')
-            print '-' * 72
+            print(fmt % (' ', 'Machine', 'User access'))
+            print('-' * 72)
             for machine in sorted(machines.keys()):
                 properties = machines[machine]
-                print fmt % ('+', machine,
-                             ', '.join(sorted(properties['users'].keys())))
+                print(fmt % (
+                    '+', machine,
+                    ', '.join(sorted(properties['users'].keys()))))
 
     elif command == 'search':
         # Search uses KEY=VALUE search where KEY and VALUE are substring
@@ -558,8 +561,8 @@ def run_command(command, args, config):
             raise UserError('no search results')
 
         fmt = '%1s %-25s %s'
-        print fmt % (' ', 'Machine', 'Property and value')
-        print '-' * 72
+        print(fmt % (' ', 'Machine', 'Property and value'))
+        print('-' * 72)
         for machine in sorted(properties.keys()):
             props = properties[machine]['properties']
             for i, propname in enumerate(sorted(props.keys())):
@@ -581,19 +584,19 @@ def run_command(command, args, config):
                     fmt_args.append('(%d byte document)' % info['size'])
                 fmt_args[2:] = [' '.join(fmt_args[2:])]
 
-                print fmt % tuple(fmt_args)
+                print(fmt % tuple(fmt_args))
 
     elif command == 'check_consistency':
         errors = pstore.validate()
         if not errors:
             if config['verbose']:
-                print 'Database is consistent.'
+                print('Database is consistent.')
         else:
             for error in errors:
-                print 'There is a problem with %s %s' % tuple(error[0:2])
-                print '  problem:', error[2]
-                print '  solution:', error[3]
-                print
+                print('There is a problem with %s %s' % tuple(error[0:2]))
+                print('  problem: {0}'.format(error[2]))
+                print('  solution: {0}'.format(error[3]))
+                print('')
             raise UserError('database is inconsistent')
 
     else:
@@ -617,14 +620,14 @@ def run_show_password(machine_info, machine_password, ssh_host_hack=None):
             if info['data'] is not None:
                 data = info['data'].decrypt_with(None).read()
                 if '\n' in data:
-                    print '%s = \\' % (property,)
-                    print ' | %s' % (data.replace('\n', '\n | '),)
+                    print('%s = \\' % (property,))
+                    print(' | %s' % (data.replace('\n', '\n | '),))
                 else:
-                    print '%s = %s' % (property, data)
+                    print('%s = %s' % (property, data))
             else:
-                print '%s = (%s byte document)' % (property, info['size'])
+                print('%s = (%s byte document)' % (property, info['size']))
         else:
-            print '%s = (%s byte encrypted)' % (property, info['size'])
+            print('%s = (%s byte encrypted)' % (property, info['size']))
 
     # Run ssh
     if ssh_host_hack:
@@ -658,7 +661,7 @@ def run_show_password(machine_info, machine_password, ssh_host_hack=None):
             # ansi color the password so it's less visible
             # TODO: invert this if the console is not white-on-black
             machine_password = '\x1b[7;30m%s\x1b[0m' % machine_password
-        print 'password = %s' % (machine_password,)
+        print('password = %s' % (machine_password,))
 
 
 def run_usage(verbose=False):
@@ -667,11 +670,11 @@ def run_usage(verbose=False):
 
     # Select verbosity.
     if verbose and evil_ssh_hacks:
-        matcher = lambda i: i in (0, 1, 2)
+        matcher = (lambda i: i in (0, 1, 2))
     elif verbose:
-        matcher = lambda i: i in (0, 1)
+        matcher = (lambda i: i in (0, 1))
     else:
-        matcher = lambda i: i in (0,)
+        matcher = (lambda i: i in (0,))
 
     # The command options.
     commands = (
@@ -731,7 +734,7 @@ def run_usage(verbose=False):
     configs = '\n'.join(i[0] + i[2] for i in configs if matcher(i[1]))
 
     # Print the help.
-    print '''%(title)-60s||
+    print('''%(title)-60s||
                                                             ||
 Usage:                                                      ||
   pstore machine                                ======||====== Python
@@ -757,7 +760,7 @@ Configuration options:
         'configs': configs,
         'extra': extra,
         'title': 'pstore %s CLI' % (VERSION_STRING,),
-    }
+    })
 
 
 def pstore(args):
@@ -793,9 +796,9 @@ def main(args):
         pstore(args)
     except KeyboardInterrupt:
         sys.exit(130)  # 128+SIGINT
-    except PStoreException, e:
+    except PStoreException as e:
         # TODO: get __cause__ in verbose mode?
-        print >>sys.stderr, ': '.join(str(i) for i in e.args)
+        sys.stderr.write(': '.join(str(i) for i in e.args) + '\n')
         sys.exit(1)
 
 

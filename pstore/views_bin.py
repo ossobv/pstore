@@ -89,7 +89,7 @@ def create_property(object, property, file, user):
         # MySQLd must get read powers.
         try:
             chmod(tempname, 0604)
-        except Exception, e:
+        except Exception as e:
             raise HttpError(
                 413, 'request too large (webserver permissions)',
                 ('For mysqld to do load LOAD_FILE() on %s, we need to alter '
@@ -101,7 +101,7 @@ def create_property(object, property, file, user):
                 UPDATE pstore_property SET value = LOAD_FILE(%s)
                 WHERE id = %s;
             ''', (tempname, prop.id))
-        except Exception, e:
+        except Exception as e:
             # Tip #1:
             #   /etc/apparmor.d/local/usr.sbin.mysqld:
             #     /tmp/* r,

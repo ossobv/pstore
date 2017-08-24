@@ -76,19 +76,20 @@ class LogSqlToConsoleMiddleware(object):
                  not request.META['PATH_INFO'].startswith(
                      settings.MEDIA_URL)) and
                 not request.META['PATH_INFO'].startswith('/jsi18n/')):
-            print '\n' + '=' * 72
+            print('\n' + '=' * 72)
 
             if 'time' in connection.queries[0]:
                 total = sum(float(q['time']) for q in connection.queries)
                 for i, query in enumerate(connection.queries):
-                    print '>>> (%d) %ss: %s' % (i, query['time'], query['sql'])
-                print ('== %d queries in %f seconds ==\n' %
-                       (len(connection.queries), total))
+                    print('>>> (%d) %ss: %s' % (
+                        i, query['time'], query['sql']))
+                print('== %d queries in %f seconds ==\n' % (
+                    len(connection.queries), total))
 
             else:
                 for i, query in enumerate(connection.queries):
-                    print '>>> (%d): %s' % (i, query['sql'])
-                print ('== %d queries in %f seconds ==' %
-                       (len(connection.queries), time.time() - self.t0))
+                    print('>>> (%d): %s' % (i, query['sql']))
+                print('== %d queries in %f seconds ==' % (
+                    len(connection.queries), time.time() - self.t0))
 
         return response

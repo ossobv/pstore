@@ -20,15 +20,18 @@ Copyright (C) 2012,2013,2015  Walter Doekes <wdoekes>, OSSO B.V.
 """
 from __future__ import absolute_import
 
-import sys
 from base64 import b64decode, b64encode
 from json import load as from_jsonfile
 from random import randint
 from socket import error as SocketError
-from sys import exc_info
-from urllib import quote, unquote, urlencode
-from urllib2 import HTTPError, Request, URLError, urlopen
-
+from sys import exc_info, stderr
+try:
+    from urllib.error import HTTPError, URLError
+    from urllib.parse import quote, unquote, urlencode
+    from urllib.request import Request, urlopen
+except ImportError:
+    from urllib import quote, unquote, urlencode
+    from urllib2 import HTTPError, Request, URLError, urlopen
 from pstorelib.crypt import CryptoReader
 from pstorelib.exceptions import (BackendDown, BackendError, NotAllowed,
                                   NotFound, NoNonce)
@@ -141,7 +144,7 @@ class Backend(object):
             assert (isinstance(data, dict) or isinstance(data, list) or
                     isinstance(data, tuple))
             content_type = 'application/x-www-form-urlencoded'
-            data = urlencode(data)
+            data = urlencode(data).encode('ascii')
             content_length = len(data)
         else:
             content_type, content_length = None, None
@@ -155,15 +158,15 @@ class Backend(object):
 
         for store_url in self.urls:
             if self.verbose:
-                print >>sys.stderr, ('- Communicating with %s%s' %
-                                     (store_url, path))
+                stderr.write('- Communicating with %s%s\n' % (
+                    store_url, path))
 
             try:
                 data = self._try_server(
                     store_url, path, query_string, data, content_type,
                     content_length)
 
-            except HTTPError, e:
+            except HTTPError as e:
                 if not first_exception:
                     first_exception = exc_info()
 
@@ -192,7 +195,8 @@ class Backend(object):
             first_url = self.urls[0]
             exception = BackendDown('could not connect to %s' % (first_url,))
             exception.__cause__ = first_exception[1]  # PEP 3134 style
-            raise exception, None, first_exception[2]  # pep8(1) complains W602
+            raise exception  # following form is not python3 compabitle
+            #raise exception, None, first_exception[2]  # pep8(1) complains W602
 
         return data
 
@@ -202,7 +206,12 @@ class Backend(object):
         if data is not None:
             request.add_header('Content-Type', content_type)
             request.add_header('Content-Length', content_length)
-            request.add_data(data)
+            try:
+                request.add_data
+            except AttributeError:
+                request.data = data  # python3
+            else:
+                request.add_data(data)  # python2
 
         file = urlopen(request)
         status = file.getcode()
@@ -420,4 +429,4 @@ def urlunquote(param):
 
 
 if __name__ == '__main__':
-    print 'FIXME: unittest for', __file__
+    stderr.write('FIXME: unittest for {0}\n'.format(__file__))

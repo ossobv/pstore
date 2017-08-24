@@ -95,5 +95,5 @@ if DEBUG:
 # Secret key
 # #from random import choice
 # #chars = 'abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(-_=+)'
-# #print repr(''.join([choice(chars) for i in range(50)]))
+# #print(repr(''.join([choice(chars) for i in range(50)])))
 SECRET_KEY = ''  # set this, according to the above

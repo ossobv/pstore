@@ -42,7 +42,7 @@ from os import urandom
 try:
     import Crypto
     Crypto
-except ImportError, e:
+except ImportError as e:
     raise ImportError(e.args[0] + '\n\n*HINT* apt-get install python-crypto')
 
 from Crypto.Cipher import DES3      # decrypt DES-EDE3-CBC private key
@@ -59,7 +59,7 @@ except ImportError:
 
 try:
     import pyasn1
-except ImportError, e:
+except ImportError as e:
     raise ImportError(e.args[0] + '\n\n*HINT* apt-get install python-pyasn1')
 
 try:
@@ -202,7 +202,7 @@ class SSHKeyParser(object):
 
             try:
                 items = asn1decoder.decode(key)
-            except pyasn1.error.PyAsn1Error, e:
+            except pyasn1.error.PyAsn1Error as e:
                 if not dek_info:
                     raise CryptBadPrivKey('ASN.1 decode failed',
                                           (': '.join(str(i) for i in e.args)))

@@ -129,10 +129,10 @@ def notify_object_deletion(object):
 
         # Send out a mail.
         if settings.DEBUG:
-            print 'Sending mail to:', toaddr
-            print '--'
-            print flatbody
-            print '--'
+            print('Sending mail to: {0}'.format(toaddr))
+            print('--')
+            print(flatbody)
+            print('--')
         else:
             send_mail(subject, flatbody, fromaddr, (toaddr,))
 
@@ -173,10 +173,10 @@ def notify_publickey_change(old_publickey, new_publickey):
 
     # Send out a mail.
     if settings.DEBUG:
-        print 'Sending mail to:', user_toaddrs + admin_toaddrs
-        print '--'
-        print flatbody
-        print '--'
+        print('Sending mail to: {0}'.format(user_toaddrs + admin_toaddrs))
+        print('--')
+        print(flatbody)
+        print('--')
     else:
         # Two separate mails. The user does not need to know who the admins
         # are.
@@ -246,9 +246,9 @@ def notify_user_deletion(user, publickey, objects):
 
     # Send out a mail.
     if settings.DEBUG:
-        print 'Sending mail to:', admin_toaddrs
-        print '--'
-        print flatbody
-        print '--'
+        print('Sending mail to: {0}'.format(admin_toaddrs))
+        print('--')
+        print(flatbody)
+        print('--')
     else:
         send_mail(subject, flatbody, fromaddr, admin_toaddrs)

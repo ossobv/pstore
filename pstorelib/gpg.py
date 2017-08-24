@@ -22,14 +22,13 @@ from __future__ import absolute_import
 
 import os
 import re
-import sys
 from getpass import getpass
 from sys import stderr
 from time import time
 
 try:
     from gpgme import ERR_CANCELED, Context, GpgmeError
-except ImportError, e:
+except ImportError as e:
     raise ImportError(e.args[0] + '\n\n*HINT* apt-get install python-gpgme')
 
 try:
@@ -196,11 +195,10 @@ class GPGCrypt(object):
             # Send out a warning that this key is about to expires. I'm not
             # sure what the implications of expired keys are, but let's prepare
             # for the worst and warn the user at an early stage.
-            print >>stderr, \
-                ('WARNING: (sub)key %s for %s will expire in '
-                 '%.1f days' %
-                 (subkey.keyid, key.uids[0].email,
-                  float(subkey.expires - time()) / 86400.0))
+            stderr.write(
+                'WARNING: (sub)key %s for %s will expire in %.1f days\n\n' % (
+                    subkey.keyid, key.uids[0].email,
+                    float(subkey.expires - time()) / 86400.0))
 
         # Ok. All is good.
         return key
@@ -217,7 +215,7 @@ class GPGCrypt(object):
         try:
             key_id = get_pubkey_id_from_ascii(key)
             key = self.get_key(id=unicode(key_id))
-        except Exception, e:
+        except Exception as e:
             raise CryptError('GPG quick hack failed; no key found', e)
 
         return key
@@ -232,7 +230,7 @@ class GPGCrypt(object):
 
         try:
             self.context.decrypt(input, output)
-        except GpgmeError, e:
+        except GpgmeError as e:
             # If you press ^C during passphrase input.
             #   gpgme.GpgmeError: (7, 58, u'No data')
             # If the decryption failed (badly encrypted, secret key missing)
@@ -281,7 +279,7 @@ class GPGCrypt(object):
                 del PASSWORD_CACHE[id_name_comment_email]
             else:
                 password = PASSWORD_CACHE[id_name_comment_email]
-                print >>sys.stderr, 'NOTICE: re-using cached password'
+                stderr.write('NOTICE: re-using cached password\n')
 
         # Get the password from the callback.
         try:

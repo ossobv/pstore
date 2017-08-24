@@ -93,12 +93,12 @@ class PStoreCrypt(object):
                         key_data = file.read()
                     finally:
                         file.close()
-                except Exception, e:
+                except Exception as e:
                     raise CryptBadPrivKey('filesystem error', e)
             else:
                 try:
                     key_data = self.sshrsa_privkey_file.read()
-                except Exception, e:
+                except Exception as e:
                     raise CryptBadPrivKey('file error', e)
 
             # The keyparser can ask for a password if needed.
