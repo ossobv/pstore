@@ -153,7 +153,11 @@ dummy:
 
 %.rst: %.md
 	# pandoc does its tricks nicely. But we need to tweak it a little bit.
-	sh -c 'pandoc $< -t rst | sed -e "s/ <#[^> ]*>//g;3s/^$$/\n(_\`back to top\`)/" > $@'
+	sh -c 'pandoc $< -t rst | sed -e "\
+		s/ <#[^> ]*>//g; \
+		3s/^$$/\n.. _\`back to top\`:\n/; \
+		s/\(\`[^\`]*\`\)__/\1_/g \
+		" > $@'
 	# PyPI does not like warnings/errors
 	# (get rst2html from python-docutils)
 	sh -c 'rst2html $@ --no-raw --strict >/dev/null || ( rm -f $@; false )'
