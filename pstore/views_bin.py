@@ -88,7 +88,7 @@ def create_property(object, property, file, user):
                  (connection.settings_dict['HOST'],)))
         # MySQLd must get read powers.
         try:
-            chmod(tempname, 0604)
+            chmod(tempname, 0o604)
         except Exception as e:
             raise HttpError(
                 413, 'request too large (webserver permissions)',

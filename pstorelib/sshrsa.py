@@ -1,4 +1,5 @@
 # vim: set ts=8 sw=4 sts=4 et ai tw=79:
+# BEWARE: this is not py3-safe: should be removed..
 """
 pstore-lib -- Python Protected Password Store (Library)
 Copyright (C) 2010,2012,2013,2015  Walter Doekes <wdoekes>, OSSO B.V.

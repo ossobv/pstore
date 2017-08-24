@@ -1,5 +1,7 @@
 .PHONY: clean distclean isclean default dummy
 
+FLAKE = flake8
+
 default: dist
 
 clean:
@@ -56,16 +58,16 @@ pyclean:
 	  find . '(' -name '*.py' -o -name '*.html' -o -name '*.xml' -o -name pstore ')' \
 	    -type f -print0 | xargs --no-run-if-empty -0 pepclean; \
 	fi
-	@# Add vim modelines.
-	find . -name '*.py' -size +0 '!' -perm -u=x -print0 | \
-	  xargs --no-run-if-empty -0 grep -L '^# vim:' | \
-	  xargs --no-run-if-empty -d\\n \
-	    sed -i -e '1i# vim: set ts=8 sw=4 sts=4 et ai:'
+	# @# Add vim modelines.
+	# find . -name '*.py' -size +0 '!' -perm -u=x -print0 | \
+	#   xargs --no-run-if-empty -0 grep -L '^# vim:' | \
+	#   xargs --no-run-if-empty -d\\n \
+	#     sed -i -e '1i# vim: set ts=8 sw=4 sts=4 et ai:'
 	@# Use a custom --format so the path is space separated for
 	@# easier copy-pasting.
-	if which flake8 >/dev/null; then \
+	if which $(FLAKE) >/dev/null; then \
 	  find . '(' -name '*.py' -o -name pstore ')' -type f -print0 | \
-	    xargs --no-run-if-empty -0 flake8 --ignore=W602 \
+	    xargs --no-run-if-empty -0 $(FLAKE) --ignore=W602 \
 	      --max-line-length=99 --max-complexity=12 \
 	      --format='%(path)s %(row)d:%(col)d [%(code)s] %(text)s'; \
 	fi; true
