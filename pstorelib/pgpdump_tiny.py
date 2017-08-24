@@ -44,6 +44,12 @@ def get_int(data, offset, size):
     return integer
 
 
+def my_ord(byte):
+    if not isinstance(byte, int):
+        byte = ord(byte)
+    return byte
+
+
 def get_mpi(data, offset):
     """
     Gets a multi-precision integer as per RFC-4880.
@@ -61,7 +67,7 @@ def get_mpi(data, offset):
         mpi += get_int(data, offset + i, 4)
     for j in range(i + 4, to_process):
         mpi <<= 8
-        mpi += ord(data[offset + j])
+        mpi += my_ord(data[offset + j])
     # Python 3.2 and later alternative:
     # #mpi = int.from_bytes(data[offset:offset + to_process], byteorder='big')
     offset += to_process
@@ -82,7 +88,7 @@ class BinaryData(object):
             raise Exception("data too short")
 
         # 7th bit of the first byte must be a 1
-        if not bool(ord(data[0]) & self.binary_tag_flag):
+        if not bool(my_ord(data[0]) & self.binary_tag_flag):
             raise Exception("incorrect binary data")
         self.data = data
         self.length = len(data)
@@ -99,8 +105,8 @@ class BinaryData(object):
         """
         offset = 0
         while offset < self.length:
-            tag = ord(self.data[offset]) & 0x3f
-            new = bool(ord(self.data[offset]) & 0x40)
+            tag = my_ord(self.data[offset]) & 0x3f
+            new = bool(my_ord(self.data[offset]) & 0x40)
             if new:
                 pos = offset + 1
                 data_offset, length, partial = new_tag_length(self.data, pos)
@@ -162,13 +168,13 @@ class PublicKeyPacket(object):
         self.parse()
 
     def parse(self):
-        self.pubkey_version = ord(self.data[0])
+        self.pubkey_version = my_ord(self.data[0])
         offset = 1
         if self.pubkey_version in (2, 3):
             offset += 4  # raw_creation_time
             offset += 2  # days_valid
 
-            self.raw_pub_algorithm = ord(self.data[offset])
+            self.raw_pub_algorithm = my_ord(self.data[offset])
             offset += 1
             offset = self.parse_key_material(offset)
 
@@ -193,14 +199,14 @@ class PublicKeyPacket(object):
             # #self.fingerprint = md5.hexdigest().upper().encode('ascii')
         elif self.pubkey_version == 4:
             sha1 = hashlib.sha1()
-            sha1.update('%c%c%c' % (0x99, (self.length >> 8) & 0xff,
-                                    self.length & 0xff))
+            sha1.update(b'%c%c%c' % (
+                0x99, (self.length >> 8) & 0xff, self.length & 0xff))
             sha1.update(self.data)
             fingerprint = sha1.hexdigest().upper().encode('ascii')
             self.key_id = fingerprint[24:]
 
             offset += 4  # raw_creation_time
-            self.raw_pub_algorithm = ord(self.data[offset])
+            self.raw_pub_algorithm = my_ord(self.data[offset])
             offset += 1
 
             offset = self.parse_key_material(offset)
@@ -245,7 +251,7 @@ def new_tag_length(data, start):
     Takes a bytearray of data as input, as well as an offset of where to
     look. Returns a derived (offset, length, partial) tuple.
     """
-    first = ord(data[start])
+    first = my_ord(data[start])
     offset = length = 0
     partial = False
 
@@ -253,7 +259,7 @@ def new_tag_length(data, start):
         length = first
     elif first < 224:
         offset = 1
-        length = ((first - 192) << 8) + ord(data[start + 1]) + 192
+        length = ((first - 192) << 8) + my_ord(data[start + 1]) + 192
     elif first == 255:
         offset = 4
         length = get_int(data, start + 1, 4)
@@ -271,7 +277,7 @@ def old_tag_length(data, start):
     look. Returns a derived (offset, length) tuple.
     """
     offset = length = 0
-    temp_len = ord(data[start]) & 0x03
+    temp_len = my_ord(data[start]) & 0x03
 
     if temp_len in (0, 1, 2):
         size = (1, 2, 4)[temp_len]

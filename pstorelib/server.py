@@ -21,6 +21,7 @@ Copyright (C) 2012,2013,2015  Walter Doekes <wdoekes>, OSSO B.V.
 from __future__ import absolute_import
 
 from base64 import b64decode, b64encode
+from codecs import getreader
 from json import load as from_jsonfile
 from random import randint
 from socket import error as SocketError
@@ -35,6 +36,9 @@ except ImportError:
 from pstorelib.crypt import CryptoReader
 from pstorelib.exceptions import (BackendDown, BackendError, NotAllowed,
                                   NotFound, NoNonce)
+
+unicode = type(u'')
+utf8_reader = getreader('utf-8')
 
 
 class Backend(object):
@@ -59,18 +63,18 @@ class Backend(object):
         # as base64. Choosing base64 because of the limited size of the nonce.
         # Now we won't have to invent "magic" file/property names for the
         # nonce.
-        return b64encode(nonce).rstrip('=')
+        return b64encode(nonce).decode('ascii').rstrip('=')
 
     def propget(self, objectid, property):
         path = '/propget/%s/%s.bin' % (urlquote(objectid), urlquote(property))
-        out = {'nonce_b64': self.newnonce(), 'u': self.user}
+        out = {u'nonce_b64': self.newnonce(), 'u': self.user}
         reader = self._communicate(path, query=out)
         return reader.decrypt_with(None)
 
     def propset(self, objectid, property, files=None):
         assert files
         path = '/propset/%s/%s.bin' % (urlquote(objectid), urlquote(property))
-        out = {'nonce_b64': self.newnonce()}
+        out = {u'nonce_b64': self.newnonce()}
         none = self._communicate(path, data=out, files=files)
         assert none is None
 
@@ -78,14 +82,14 @@ class Backend(object):
         # FIXME: add: data = new user permissions
         assert files
         path = '/propupd/%s.bin' % (urlquote(objectid),)
-        out = {'nonce_b64': self.newnonce()}
+        out = {u'nonce_b64': self.newnonce()}
         none = self._communicate(path, data=out, files=files)
         assert none is None
 
     def propsearch(self, allowed_only=True, propkey_icontains=None,
                    propvalue_icontains=None):
         path = '/propsearch.js'
-        out = {'nonce_b64': self.newnonce()}
+        out = {u'nonce_b64': self.newnonce()}
         if allowed_only:
             out['u'] = self.user
         if propkey_icontains is not None:
@@ -106,7 +110,7 @@ class Backend(object):
 
     def validate(self):
         path = '/validate.js'
-        out = {'nonce_b64': self.newnonce()}
+        out = {u'nonce_b64': self.newnonce()}
         statusdata = self._communicate(path, query=out)
         return statusdata['errors']
 
@@ -126,31 +130,39 @@ class Backend(object):
                 if (isinstance(data, list) or isinstance(data, tuple)):
                     iterator = data
                 elif isinstance(data, dict):
-                    iterator = data.iteritems()
+                    iterator = data.items()
                 else:
                     assert False
                 # Note that you must send ASCII or UTF-8 encoded data here.
                 # Otherwise the Django POST parser will mangle the data.
-                # (Therefore then nonce is sent in base64.)
+                # (Therefore the nonce is sent as base64 string.)
                 for name, value in iterator:
-                    form.add_field(name, value)
+                    # Only ascii strings here.
+                    assert isinstance(name, unicode), name
+                    assert isinstance(value, unicode), value
+                    form.add_field(name.encode('ascii'), value.encode('ascii'))
 
             for name, filename, file in files:
+                # Only bytestrings here.
+                assert not isinstance(name, unicode), name
+                assert not isinstance(filename, unicode), filename
                 form.add_file(name, filename, file)  # no content-type..
             content_type = form.get_content_type()
             content_length = form.get_length()
             data = form.get_data()
+
         elif data is not None:
             assert (isinstance(data, dict) or isinstance(data, list) or
                     isinstance(data, tuple))
             content_type = 'application/x-www-form-urlencoded'
             data = urlencode(data).encode('ascii')
             content_length = len(data)
+
         else:
             content_type, content_length = None, None
 
-        return self._try_servers(path, query_string, data, content_type,
-                                 content_length)
+        return self._try_servers(
+            path, query_string, data, content_type, content_length)
 
     def _try_servers(self, path, query_string, data, content_type,
                      content_length):
@@ -162,7 +174,7 @@ class Backend(object):
                     store_url, path))
 
             try:
-                data = self._try_server(
+                response = self._try_server(
                     store_url, path, query_string, data, content_type,
                     content_length)
 
@@ -196,9 +208,9 @@ class Backend(object):
             exception = BackendDown('could not connect to %s' % (first_url,))
             exception.__cause__ = first_exception[1]  # PEP 3134 style
             raise exception  # following form is not python3 compabitle
-            #raise exception, None, first_exception[2]  # pep8(1) complains W602
+            # raise exception, None, first_exception[2]  # pep complaint: W602
 
-        return data
+        return response
 
     def _try_server(self, store_url, path, query_string, data, content_type,
                     content_length):
@@ -221,7 +233,7 @@ class Backend(object):
         if status == 204:
             try:
                 nothing = file.read()
-                assert nothing == ''
+                assert len(nothing) == 0, nothing
             finally:
                 file.close()
             data = None
@@ -229,18 +241,25 @@ class Backend(object):
         # JSON data?
         elif path.endswith('.js'):
             try:
-                data = from_jsonfile(file)
+                data = from_jsonfile(utf8_reader(file))
             finally:
                 file.close()
 
         # Binary data?
         elif path.endswith('.bin'):
             # We expect this to be set!
-            length = int(file.headers.getheader('content-length'))
-            enctype = file.headers.getheader('x-encryption', 'none')
+            try:
+                file.headers.getheader
+            except AttributeError:  # py3
+                content_length = file.headers.get('content-length')
+                enctype = file.headers.get('x-encryption', 'none')
+            else:  # py2
+                content_length = file.headers.getheader('content-length')
+                enctype = file.headers.getheader('x-encryption', 'none')
+            finally:
+                length = int(content_length)
             # No file closing here.. the cryptoreader gets to use it.
-            data = CryptoReader(fp=file, length=length,
-                                enctype=enctype)
+            data = CryptoReader(fp=file, length=length, enctype=enctype)
 
         # Unknown data?
         else:
@@ -255,7 +274,7 @@ class Backend(object):
 
     def get_keys(self, users):
         path = '/users.js'
-        out = [('nonce_b64', self.newnonce())] + [('q', i) for i in users]
+        out = [(u'nonce_b64', self.newnonce())] + [('q', i) for i in users]
         userdata = self._communicate(path, query=out)
         if set(users) != set(userdata.keys()):
             raise NotFound('did not receive same list of users: '
@@ -264,15 +283,15 @@ class Backend(object):
 
         # Reduce dictionary to a set of keys.
         ret = {}
-        for key, value in userdata.iteritems():
+        for key, value in userdata.items():
             ret[str(key)] = str(value['key'])
         return ret
 
     def get_object(self, objectid, allowed_only=True):
         path = '/object/%s.js' % (urlquote(objectid),)
-        out = {'nonce_b64': self.newnonce()}
+        out = {u'nonce_b64': self.newnonce()}
         if allowed_only:
-            out['u'] = self.user
+            out['u'] = self.user.encode('ascii')
         objdata = self._communicate(path, query=out)
 
         # The public and shared properties are b64encoded because of the JSON
@@ -291,7 +310,7 @@ class Backend(object):
     def get_objects(self, objectid_contains=None, allowed_only=True,
                     verbose=False):
         nonce = self.newnonce()  # all operations require a nonce
-        out = {'nonce_b64': nonce}
+        out = {u'nonce_b64': nonce}
         if objectid_contains:
             out['q'] = objectid_contains  # e.g. a partial object name
         if allowed_only:
@@ -340,40 +359,37 @@ class MultiPartForm(object):
         """
         Add a simple field to the form data.
         """
-        # Force cast to byte string so we don't incidentally upcast this to an
-        # unicode string.
-        self.form_fields.append((str(name), str(value)))
+        self.form_fields.append((name, value))
 
     def add_file(self, name, filename, file,
                  content_type='application/octet-stream'):
         """
         Add a file to be uploaded.
         """
-        # Force cast to byte string so we don't incidentally upcast this to an
-        # unicode string.
         # NOTE: the name is the "field name"
         # FIXME: In the future we should be able to not read the entire file
         # body at this point.
         body = file.read()
-        self.files.append((str(name), str(filename), str(content_type), body))
+        self.files.append((name, filename, content_type, body))
 
     def get_data(self):
         """
-        Return a string representing the form data, including attached files.
+        Return a binstring representing the form data, including
+        attached files.
         """
         if not hasattr(self, '_data'):
             # Build a list of lists, each containing "lines" of the request.
             # Each part is separated by a boundary string. Once the list is
             # built, return a string where each line is separated by '\r\n'.
             parts = []
-            part_boundary = '--' + self.boundary
+            part_boundary = b'--' + self.boundary.encode('ascii')
 
             # Add the form fields.
             for name, value in self.form_fields:
                 parts.extend([
                     part_boundary,
-                    'Content-Disposition: form-data; name="%s"' % (name,),
-                    '',
+                    b'Content-Disposition: form-data; name="%s"' % (name,),
+                    b'',
                     value,
                 ])
 
@@ -381,17 +397,17 @@ class MultiPartForm(object):
             for name, filename, content_type, body in self.files:
                 parts.extend([
                     part_boundary,
-                    ('Content-Disposition: file; name="%s"; filename="%s"' %
-                     (name, filename)),
-                    'Content-Type: %s' % (content_type,),
-                    '',
+                    b'Content-Disposition: file; name="%s"; filename="%s"' % (
+                        name, filename),
+                    b'Content-Type: %s' % (content_type.encode('ascii'),),
+                    b'',
                     body,
                 ])
 
             # Flatten the list and add closing boundary marker, then return
             # CR+LF separated data.
-            parts.extend([part_boundary + '--', ''])
-            self._data = '\r\n'.join(parts)
+            parts.extend([part_boundary + b'--', b''])
+            self._data = b'\r\n'.join(parts)
 
         return self._data
 

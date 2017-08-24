@@ -41,6 +41,8 @@ from pstorelib.exceptions import (CryptError, CryptBadPassword,
                                   CryptBadPubKey, CryptBadPrivKey)
 from pstorelib.gpgkey import get_pubkey_id_from_ascii
 
+unicode = type(u'')
+
 
 # A few notes about subkeys:
 #
@@ -157,12 +159,12 @@ class GPGCrypt(object):
             # "If [PARAM2] is 1, only private keys will be returned."
             key = self.context.get_key(kwargs['id'], 0)
             # Make sure we have an e-mail to go by.
-            email = unicode(key.uids[0].email.lower())
+            email = key.uids[0].email.lower()
 
         # Lookup by email. E-mail returned by gpgme is in unicode. (Even
         # though it probably won't contain any non-ascii.)
         else:
-            email = unicode(kwargs['email']).lower()
+            email = kwargs['email'].lower()
             found = []
 
             for key in self.context.keylist():
@@ -204,7 +206,7 @@ class GPGCrypt(object):
         return key
 
     def import_key(self, key):
-        to_import = BytesIO(str(key))  # ensure bytestring!
+        to_import = BytesIO(key.encode('ascii'))  # ensure bytestring
         res = self.context.import_(to_import)
         if (res.imported + res.unchanged) != 1:
             raise CryptError('import failed (imported=%d, unchanged=%d). '
@@ -213,9 +215,9 @@ class GPGCrypt(object):
                              'e.g. "/tmp"' % (res.imported, res.unchanged))
 
         try:
-            key_id = get_pubkey_id_from_ascii(key)
-            key = self.get_key(id=unicode(key_id))
-        except Exception as e:
+            key_id = get_pubkey_id_from_ascii(key).decode('ascii')
+            key = self.get_key(id=key_id)
+        except AssertionError as e:
             raise CryptError('GPG quick hack failed; no key found', e)
 
         return key

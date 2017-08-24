@@ -44,6 +44,14 @@ ALPHA = ('ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 NUM = '0123456789'
 ALNUM = ALPHA + NUM
 
+try:
+    bytes_stdout = sys.stdout.buffer  # py3 for raw bytes
+    bytes_stdin = sys.stdin.buffer
+except AttributeError:
+    bytes_stdout = sys.stdout  # py2
+    bytes_stdin = sys.stdin
+unicode = type(u'')
+
 
 class PStoreInterface(object):
     PASSWORD_PROPERTY = 'password'
@@ -139,8 +147,8 @@ class PStoreInterface(object):
         for property, info in object['properties'].items():
             if info['enctype'] == 'none':
                 continue
-            property = str(property)  # force bytestring; using it as dict key
-            properties[property] = self.propget(objectid, property)
+            properties[property] = self.propget(
+                objectid, property.encode('ascii'))
 
         # 2a.
         # FIXME: there should be a way to denote that we are not updating the
@@ -157,7 +165,9 @@ class PStoreInterface(object):
                 sys.stderr.write('INFO: encrypting..\n')
             for user in allowed_users:
                 encryptedfp = writer.encrypt_with(keys[user])
-                files.append((property, user, encryptedfp))
+                files.append((
+                    property.encode('ascii'), user.encode('ascii'),
+                    encryptedfp))
 
         # 4. Upload the whole batch in a single go, along with the user
         # modifications.
@@ -208,7 +218,9 @@ class PStoreInterface(object):
                 sys.stderr.write('INFO: encrypting..\n')
             for user in allowed_users:
                 encryptedfp = writer.encrypt_with(keys[user])
-                files.append((property, user, encryptedfp))
+                files.append((
+                    property.encode('ascii'), user.encode('ascii'),
+                    encryptedfp))
         else:
             # The value is public.
             files = [(property, '*', fp)]
@@ -462,7 +474,7 @@ def run_command(command, args, config):
         fp = pstore.propget(name, property)
         # Use a sendfile(2) compatible call to push everything from the fp to
         # stdout.
-        sendfile(sys.stdout, fp)
+        sendfile(bytes_stdout, fp)
         # We dropped the last line feed on input from a TTY. So, if the output
         # is a tty too, we'll add the LF again.
         if sys.stdout.isatty():
@@ -485,7 +497,7 @@ def run_command(command, args, config):
 
     elif command in ('propset', 'propsetenc'):
         # TODO: Add the possibility to replace stdin with a file..
-        fp = sys.stdin
+        fp = bytes_stdin
         # Warn when storing unencrypted properties.
         if command == 'propset':
             if 'PSTORE_NOINPUT' not in os.environ:
@@ -619,11 +631,14 @@ def run_show_password(machine_info, machine_password, ssh_host_hack=None):
         if info['enctype'] == 'none':
             if info['data'] is not None:
                 data = info['data'].decrypt_with(None).read()
-                if '\n' in data:
-                    print('%s = \\' % (property,))
-                    print(' | %s' % (data.replace('\n', '\n | '),))
+                if b'\n' in data:
+                    bytes_stdout.write(b'%s = \\\n | %s\n' % (
+                        property.encode('ascii'),
+                        data.replace('b\n', b'\n | '),))
                 else:
-                    print('%s = %s' % (property, data))
+                    bytes_stdout.write(b'%s = %s\n' % (
+                        property.encode('ascii'),
+                        data))
             else:
                 print('%s = (%s byte document)' % (property, info['size']))
         else:
@@ -660,8 +675,8 @@ def run_show_password(machine_info, machine_password, ssh_host_hack=None):
         if hasattr(os, 'isatty') and os.isatty(sys.stdout.fileno()):
             # ansi color the password so it's less visible
             # TODO: invert this if the console is not white-on-black
-            machine_password = '\x1b[7;30m%s\x1b[0m' % machine_password
-        print('password = %s' % (machine_password,))
+            machine_password = b'\x1b[7;30m%s\x1b[0m' % (machine_password,)
+        bytes_stdout.write(b'password = %s\n' % (machine_password,))
 
 
 def run_usage(verbose=False):

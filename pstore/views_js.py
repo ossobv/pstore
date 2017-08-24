@@ -339,7 +339,7 @@ def validate(request):
         for property in shared_properties:
             per_property[property.name].append(property.user_id)
 
-        for property_name, property_user_ids in per_property.iteritems():
+        for property_name, property_user_ids in per_property.items():
             if (len(property_user_ids) != len(user_ids) or
                     set(property_user_ids) != set(user_ids)):
                 errors.append((

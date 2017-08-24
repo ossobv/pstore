@@ -92,7 +92,7 @@ class FileWithoutTrailingEnter(object):
     """
     def __init__(self, fp):
         self.fp = fp
-        self.buf = ''
+        self.buf = b''
         self.eof = False
 
     def read(self, size=-1):
@@ -110,7 +110,7 @@ class FileWithoutTrailingEnter(object):
                 self.buf = self.buf + data
 
         # No bytes to keep? Return quickly.
-        if not self.buf.endswith('\n'):
+        if not self.buf.endswith(b'\n'):
             if size == -1:
                 ret, self.buf = self.buf, ''
             else:
@@ -118,7 +118,7 @@ class FileWithoutTrailingEnter(object):
             return ret
 
         # Ok, hold back one or two bytes.
-        if self.buf.endswith('\r\n'):
+        if self.buf.endswith(b'\r\n'):
             keep = 2
         else:
             keep = 1
