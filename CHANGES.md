@@ -4,6 +4,17 @@ pstore :: Python Protected Password Store
 The list of changes.
 
 
+2017-08-25: 1.2.0
+-----------------
+ * #1: CLI -c create on an existing object now fails as expected.
+ * #5: CLI client is now Python3 compatible. Also fix issue with certain
+   binary output.
+ * #8: CLI -s search now does `[KEY=][VALUE]`, not `[KEY][=VALUE]`.
+ * #10/#18: Be more tolerant of +excess +users.
+ * #15: Ignore SIGPIPE on stdout.
+ * #17: CLI search which gets too many results now shows clear error.
+ * Fix python3 support for the CLI.
+
 2016-06-02: 1.1.3
 -----------------
  * Add example workaround in settings.template so we can run with
