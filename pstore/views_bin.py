@@ -50,8 +50,7 @@ def create_property(object, property, file, user):
     if user:
         ptype = Property.TYPE_SHARED
         if file.size == 0:
-            raise HttpError(400, 'encrypted properties cannot be 0 bytes in '
-                                 'length')
+            raise HttpError(422, 'encrypted properties cannot have 0 length')
     else:
         ptype = Property.TYPE_PUBLIC
 
@@ -66,10 +65,9 @@ def create_property(object, property, file, user):
         tempname = None
         data = file.read()
         if len(data) != file.size:
-            raise HttpError(
-                500, 'file read returned wrong amount of bytes',
-                ('We expected to read %d bytes at once from %s. We only got '
-                 '%d bytes.' % (file.size, file.name, len(data))))
+            raise HttpError(500, 'file read returned wrong amount of bytes', (
+                'We expected to read %d bytes at once from %s. We only got '
+                '%d bytes.' % (file.size, file.name, len(data))))
 
     prop = Property.objects.create(object=object, name=property,
                                    type=ptype, value=data, user=user)
@@ -81,19 +79,18 @@ def create_property(object, property, file, user):
         # three. We expect you to run the MySQLd on localhost for now..
         if (connection.settings_dict['HOST'] not in
                 ('', 'localhost', '127.0.0.1')):
-            raise HttpError(
-                413, 'request too large (mysqld infrastructure)',
-                ('mysqld can only use LOAD_FILE() on localhost and the DB '
-                 'server seems to be running on %s' %
-                 (connection.settings_dict['HOST'],)))
+            raise HttpError(413, 'request too large (mysqld infrastructure)', (
+                'mysqld can only use LOAD_FILE() on localhost and the DB '
+                'server seems to be running on %s' % (
+                    connection.settings_dict['HOST'],)))
+
         # MySQLd must get read powers.
         try:
             chmod(tempname, 0o604)
         except Exception as e:
-            raise HttpError(
-                413, 'request too large (webserver permissions)',
-                ('For mysqld to do load LOAD_FILE() on %s, we need to alter '
-                 'file permissions, we got: %s' % (tempname, e)))
+            raise HttpError(413, 'request too large (webserver permissions)', (
+                'For mysqld to do load LOAD_FILE() on %s, we need to alter '
+                'file permissions, we got: %s' % (tempname, e)))
         # Try to read the file.
         try:
             cursor = connection.cursor()
@@ -117,11 +114,10 @@ def create_property(object, property, file, user):
             #     # ROW based replication. Otherwise LOAD_FILE will fail.
             #     binlog_format = MIXED
             #
-            raise HttpError(
-                413, 'request too large (mysqld permissions)',
-                ('mysqld LOAD_FILE failed for %s, check apparmor. Check '
-                 'File_Priv mysql permissions, check @@max_allowed_packet, '
-                 'check @@secure_file_priv: %s' % (tempname, e)))
+            raise HttpError(413, 'request too large (mysqld permissions)', (
+                'mysqld LOAD_FILE failed for %s, check apparmor. Check '
+                'File_Priv mysql permissions, check @@max_allowed_packet, '
+                'check @@secure_file_priv: %s' % (tempname, e)))
         finally:
             # Remove access to the file asap.
             unlink(tempname)

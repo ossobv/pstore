@@ -30,6 +30,7 @@ from django.views.decorators.http import require_GET
 from pstorelib.server import urlunquote
 
 from pstore.decorators import audit_view, nonce_required
+from pstore.http import HttpError
 from pstore.models import Object, ObjectPerm, PublicKey, Property
 from pstore.security import get_object_or_403
 from pstore.xhr import JsonResponse
@@ -216,7 +217,12 @@ def search_properties(request):
 
     # First sanity check:
     if qs.count() > 100:
-        raise PermissionDenied('too many results')
+        # RFC4918 11.2.  422 Unprocessable Entity
+        # > ... For example, this error condition may occur if an XML
+        # > request body contains well-formed (i.e., syntactically
+        # > correct), but semantically erroneous, XML instructions.
+        # In this case, semantics being: be more specific.
+        raise HttpError(422, 'too many results')
 
     # Fetch extra properties we need:
     qs = qs.extra(select={'size': 'LENGTH(value)'})
