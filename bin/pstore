@@ -534,24 +534,30 @@ def run_command(command, args, config):
         # But we'd have to take care when splitting the KEY from the
         # VALUE. (Possibly by simply accepting at most one equals
         # sign, which we do right now.)
+        #
+        # Current format:
+        #   [KEY=]VALUE
+        # NOTE: This was KEY[=VALUE] up until (including) pstore 1.1.3.
+        #
         search_parts = config['search'].split('=')
         if len(search_parts) == 1:
-            search_parts.append(None)
+            search_parts.insert(0, None)  # insert "empty" key
         elif len(search_parts) != 2:
             raise UserError(
                 'search string can contain at most one equals sign')
-        if search_parts[0] and search_parts[0][0] not in ALNUM:
+
+        if any(part and part[0] not in ALNUM for part in search_parts):
             raise UserError(
                 'search format must not start with non-alnum character; '
                 'for forward compatibility')
-        if not search_parts[0] and not search_parts[1]:
+        if all(not part for part in search_parts):
             raise UserError('refusing to search for the empty string')
+
         search_kwargs = {}
         if search_parts[0]:
             search_kwargs['propkey_icontains'] = search_parts[0]
-        if search_parts[1] is not None:
-            # When empty, we still want it because it signifies whether
-            # we want unencrypted properties only.
+        if search_parts[1]:
+            # If set, we'll search unencrypted properties only.
             search_kwargs['propvalue_icontains'] = search_parts[1]
         limited = not config['show_all']
 
@@ -650,7 +656,7 @@ Usage:                                                      ||
   echo Under the cupboard | pstore -ps machine location
     (add unencrypted location property to machine; use -pl to list, -pg
      to get and -pe to store *encrypted* properties)
-  pstore -s [propkey][=propvalue]
+  pstore -s [propkey=][propvalue]
     (search for properties, only public property values can be searched,
      using substring matching, case sensitivity depends on backend)
 
