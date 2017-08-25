@@ -73,7 +73,8 @@ class PStoreInterface(object):
         fp = BytesIO(new_password)
         self.propset(
             machine, self.PASSWORD_PROPERTY, fp,
-            allowed_users=list(set(allowed_users)))
+            allowed_users=list(set(allowed_users)),
+            o_excl=True)
 
     def change_password(self, machine, new_password):
         if new_password in (None, ''):
@@ -179,7 +180,7 @@ class PStoreInterface(object):
     def propget(self, objectid, property):
         return self.backend.propget(objectid, property)
 
-    def propset(self, objectid, property, fp, allowed_users=None):
+    def propset(self, objectid, property, fp, allowed_users=None, o_excl=False):
         """The ``allowed_users`` argument can be one of three things:
         - ``None`` which means the property is public (unencrypted)
         - ``True`` which means: take the user list from the server. This won't
@@ -229,7 +230,7 @@ class PStoreInterface(object):
             files = [(property, '*', fp)]
 
         # FIXME: rename "files" to "values" or something
-        self.backend.propset(objectid, property, files=files)
+        self.backend.propset(objectid, property, files=files, o_excl=o_excl)
 
     def validate(self):
         return self.backend.validate()

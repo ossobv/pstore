@@ -71,10 +71,14 @@ class Backend(object):
         reader = self._communicate(path, query=out)
         return reader.decrypt_with(None)
 
-    def propset(self, objectid, property, files=None):
+    def propset(self, objectid, property, files=None, o_excl=False):
         assert files
+
         path = '/propset/%s/%s.bin' % (urlquote(objectid), urlquote(property))
         out = {u'nonce_b64': self.newnonce()}
+        if o_excl:  # "ensure new"
+            out[u'o_excl'] = u'1'
+
         none = self._communicate(path, data=out, files=files)
         assert none is None
 

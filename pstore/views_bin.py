@@ -224,8 +224,9 @@ def set_property(request, object_identifier, property_name):
     # Check the rest of the arguments.
     if len(request.GET) != 0:
         raise NotImplementedError('Unexpected GET args', request.GET)
-    if len(request.POST) != 1:  # nonce was here..
+    if set(request.POST.keys()) - set(['nonce_b64', 'o_excl']):
         raise NotImplementedError('Unexpected POST args', request.POST)
+    o_excl = (request.POST.get('o_excl', '') == '1')  # force create or fail
 
     # Docode URI arguments.
     object_identifier = urlunquote(object_identifier)
@@ -279,6 +280,9 @@ def set_property(request, object_identifier, property_name):
             ObjectPerm.objects.create(object=obj, user=user, can_write=True)
 
     else:
+        if o_excl:
+            raise PermissionDenied('Object exists already')
+
         # Check that author has write powers.
         # TODO: we could allow SU-users to do stuff..
         if not obj.allowed.filter(can_write=True, user=author).exists():
