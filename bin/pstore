@@ -71,15 +71,17 @@ class PStoreInterface(object):
         if new_password in (None, ''):
             raise UserError('empty password rejected')
         fp = BytesIO(new_password)
-        self.propset(machine, self.PASSWORD_PROPERTY, fp,
-                     allowed_users=allowed_users)
+        self.propset(
+            machine, self.PASSWORD_PROPERTY, fp,
+            allowed_users=list(set(allowed_users)))
 
     def change_password(self, machine, new_password):
         if new_password in (None, ''):
             raise UserError('empty password rejected')
         fp = BytesIO(new_password)
-        self.propset(machine, self.PASSWORD_PROPERTY, fp,
-                     allowed_users=True)  # <-- True means "use existing users"
+        self.propset(
+            machine, self.PASSWORD_PROPERTY, fp,
+            allowed_users=True)  # <-- True means "use existing users"
 
     def change_permissions(self, objectid, allow, revoke):
         object = self.backend.get_object(objectid)
