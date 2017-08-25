@@ -21,6 +21,7 @@ Copyright (C) 2010,2012,2013,2015  Walter Doekes <wdoekes>, OSSO B.V.
 """
 from __future__ import absolute_import
 
+import errno
 import os
 import sys
 from getopt import GetoptError, gnu_getopt
@@ -463,18 +464,17 @@ def run_command(command, args, config):
         # Do not ask for passwords when called from a bash_completion script.
         PStoreCrypt.get().askpass = PStoreCrypt.ASKPASS_NEVER
         allowed_only = (not config['show_all'])
-        objects = pstore.get_objects(objectid_contains=name,
-                                     allowed_only=allowed_only,
-                                     verbose=False)
-        for objectid in sorted(objects.keys()):
-            print(objectid)
+        objects = pstore.get_objects(
+            objectid_contains=name, allowed_only=allowed_only,
+            verbose=False)
+        silenced_sigpipe(print_results_property_keys, objects)
 
     elif command == 'propget':
         # TODO: Add the possibility to replace stdout with a file..
         fp = pstore.propget(name, property)
         # Use a sendfile(2) compatible call to push everything from the fp to
         # stdout.
-        sendfile(bytes_stdout, fp)
+        silenced_sigpipe(sendfile, bytes_stdout, fp)
         # We dropped the last line feed on input from a TTY. So, if the output
         # is a tty too, we'll add the LF again.
         if sys.stdout.isatty():
@@ -482,18 +482,10 @@ def run_command(command, args, config):
 
     elif command == 'proplist':
         allowed_only = (not config['show_all'])
-        properties = pstore.get_properties(name,
-                                           allowed_only=allowed_only)
-        if config['verbose']:
-            for property in sorted(properties.keys()):
-                value = properties[property]
-                info = 'size=%d' % (value['size'],)
-                if value['enctype'] == 'none':
-                    info += ', unencrypted'
-                print('%s (%s)' % (property, info))
-        else:
-            for property in sorted(properties.keys()):
-                print(property)
+        properties = pstore.get_properties(
+            name, allowed_only=allowed_only)
+
+        silenced_sigpipe(print_result_properties, properties, config)
 
     elif command in ('propset', 'propsetenc'):
         # TODO: Add the possibility to replace stdin with a file..
@@ -529,14 +521,7 @@ def run_command(command, args, config):
                                           allowed_only=limited, verbose=True)
             if not machines:
                 raise UserError('no visible machines match %s' % (name,))
-            fmt = '%1s %-25s %s'
-            print(fmt % (' ', 'Machine', 'User access'))
-            print('-' * 72)
-            for machine in sorted(machines.keys()):
-                properties = machines[machine]
-                print(fmt % (
-                    '+', machine,
-                    ', '.join(sorted(properties['users'].keys()))))
+            silenced_sigpipe(print_results_list, machines)
 
     elif command == 'search':
         # Search uses KEY=VALUE search where KEY and VALUE are substring
@@ -572,31 +557,7 @@ def run_command(command, args, config):
         if not properties:
             raise UserError('no search results')
 
-        fmt = '%1s %-25s %s'
-        print(fmt % (' ', 'Machine', 'Property and value'))
-        print('-' * 72)
-        for machine in sorted(properties.keys()):
-            props = properties[machine]['properties']
-            for i, propname in enumerate(sorted(props.keys())):
-                if i == 0:
-                    fmt_args = ['+', machine, propname, '=']
-                else:
-                    fmt_args = ['', '', propname, '=']
-                info = props[propname]
-                if 'data' in info:
-                    assert info['enctype'] == 'none'
-                    data = info['data'].decrypt_with(None).read()
-                    if len(data) < 80:
-                        fmt_args.append(data)
-                    else:
-                        fmt_args.append('(%d byte document)' % info['size'])
-                elif info['enctype'] != 'none':
-                    fmt_args.append('(%d byte encrypted)' % info['size'])
-                else:
-                    fmt_args.append('(%d byte document)' % info['size'])
-                fmt_args[2:] = [' '.join(fmt_args[2:])]
-
-                print(fmt % tuple(fmt_args))
+        silenced_sigpipe(print_result_search, properties, config)
 
     elif command == 'check_consistency':
         errors = pstore.validate()
@@ -624,6 +585,116 @@ def run_show_password(machine_info, machine_password, ssh_host_hack=None):
     # FIXME FIXME FIXME
 
     # Er.. why do we assume that the user wants all this on his screen?
+    silenced_sigpipe(print_result_related_properties, machine_info)
+
+    if ssh_host_hack:
+        # Run ssh
+        run_ssh_host_hack(ssh_host_hack)
+    else:
+        # Show password
+        silenced_sigpipe(print_result_password, machine_password)
+
+
+def run_ssh_host_hack(machine_password, ssh_host_hack):
+    if 'DISPLAY' not in os.environ:
+        os.environ['DISPLAY'] = 'whatever:0'
+    os.environ['LD_PRELOAD'] = SSH_ASKPASS_PRELOAD
+    os.environ['SSH_ASKPASS'] = SSH_ASKPASS_APP
+    os.environ['SSH_PASSWORD'] = mktemp()
+    # Not really secure.. using the filesystem.. but it'll have
+    # to do for now..
+    temp = open(os.environ['SSH_PASSWORD'], 'w')
+    try:
+        temp.write(machine_password)
+    finally:
+        temp.close()
+        del temp
+    try:
+        os.execve('/usr/bin/ssh',
+                  ['ssh', '-oPubkeyAuthentication=no', ssh_host_hack],
+                  os.environ)
+    finally:
+        # We don't usually get here, but if we do, make sure we clean up
+        # the password.
+        temp = open(os.environ['SSH_PASSWORD'], 'w')
+        temp.write('X' * 1024)
+        temp.close()
+        os.unlink(os.environ['SSH_PASSWORD'])
+
+
+def silenced_sigpipe(callable, *args, **kwargs):
+    try:
+        ret = callable(*args, **kwargs)
+    except IOError as e:
+        if e.errno != errno.EPIPE:
+            raise
+        sys.exit(0)  # or 141 = 128 + 13(SIGPIPE) ?
+    return ret
+
+
+def print_help(**kwargs):
+    print('''%(title)-60s||
+                                                            ||
+Usage:                                                      ||
+  pstore machine                                ======||====== Python
+    (look up a machine password)                      ||    || Protected
+  pstore machine +user1 ^user2                        ||    || Password
+    (allow (+) and revoke (^) access)                 ======|| Store
+  pstore -c machine [+user1]                          ||
+    (add machine and allow access)                    ||
+  pstore -P machine [+user1] [^user2]                 ||
+    (change machine password and allow/revoke access)
+  echo Under the cupboard | pstore -ps machine location
+    (add unencrypted location property to machine; use -pl to list, -pg
+     to get and -pe to store *encrypted* properties)
+  pstore -s [propkey][=propvalue]
+    (search for properties, only public property values can be searched,
+     using substring matching, case sensitivity depends on backend)
+
+Command options:
+%(commands)s
+Configuration options:
+%(configs)s%(extra)s''' % kwargs)
+
+
+def print_results_list(machines):
+    fmt = '%1s %-25s %s'
+    print(fmt % (' ', 'Machine', 'User access'))
+    print('-' * 72)
+    for machine in sorted(machines.keys()):
+        properties = machines[machine]
+        print(fmt % (
+            '+', machine,
+            ', '.join(sorted(properties['users'].keys()))))
+
+
+def print_result_password(machine_password):
+    if hasattr(os, 'isatty') and os.isatty(sys.stdout.fileno()):
+        # ansi color the password so it's less visible
+        # TODO: invert this if the console is not white-on-black
+        machine_password = b'\x1b[7;30m%s\x1b[0m' % (machine_password,)
+    bytes_stdout.write(b'password = %s\n' % (machine_password,))
+
+
+def print_result_properties(properties, config):
+    if config['verbose']:
+        for property in sorted(properties.keys()):
+            value = properties[property]
+            info = 'size=%d' % (value['size'],)
+            if value['enctype'] == 'none':
+                info += ', unencrypted'
+            print('%s (%s)' % (property, info))
+    else:
+        for property in sorted(properties.keys()):
+            print(property)
+
+
+def print_results_property_keys(properties):
+    for objectid in sorted(properties.keys()):
+        print(objectid)
+
+
+def print_result_related_properties(machine_info):
     for property in sorted(machine_info['properties'].keys()):
         if property == PStoreInterface.PASSWORD_PROPERTY:
             continue  # do that one last..
@@ -644,39 +715,33 @@ def run_show_password(machine_info, machine_password, ssh_host_hack=None):
         else:
             print('%s = (%s byte encrypted)' % (property, info['size']))
 
-    # Run ssh
-    if ssh_host_hack:
-        if 'DISPLAY' not in os.environ:
-            os.environ['DISPLAY'] = 'whatever:0'
-        os.environ['LD_PRELOAD'] = SSH_ASKPASS_PRELOAD
-        os.environ['SSH_ASKPASS'] = SSH_ASKPASS_APP
-        os.environ['SSH_PASSWORD'] = mktemp()
-        # Not really secure.. using the filesystem.. but it'll have
-        # to do for now..
-        temp = open(os.environ['SSH_PASSWORD'], 'w')
-        try:
-            temp.write(machine_password)
-        finally:
-            temp.close()
-            del temp
-        try:
-            os.execve('/usr/bin/ssh',
-                      ['ssh', '-oPubkeyAuthentication=no', ssh_host_hack],
-                      os.environ)
-        finally:
-            # We don't usually get here, but if we do, make sure we clean up
-            # the password.
-            temp = open(os.environ['SSH_PASSWORD'], 'w')
-            temp.write('X' * 1024)
-            temp.close()
-            os.unlink(os.environ['SSH_PASSWORD'])
-    # Show password
-    else:
-        if hasattr(os, 'isatty') and os.isatty(sys.stdout.fileno()):
-            # ansi color the password so it's less visible
-            # TODO: invert this if the console is not white-on-black
-            machine_password = b'\x1b[7;30m%s\x1b[0m' % (machine_password,)
-        bytes_stdout.write(b'password = %s\n' % (machine_password,))
+
+def print_result_search(properties, config):
+    fmt = '%1s %-25s %s'
+    print(fmt % (' ', 'Machine', 'Property and value'))
+    print('-' * 72)
+    for machine in sorted(properties.keys()):
+        props = properties[machine]['properties']
+        for i, propname in enumerate(sorted(props.keys())):
+            if i == 0:
+                fmt_args = ['+', machine, propname, '=']
+            else:
+                fmt_args = ['', '', propname, '=']
+            info = props[propname]
+            if 'data' in info:
+                assert info['enctype'] == 'none'
+                data = info['data'].decrypt_with(None).read()
+                if len(data) < 80:
+                    fmt_args.append(data)
+                else:
+                    fmt_args.append('(%d byte document)' % info['size'])
+            elif info['enctype'] != 'none':
+                fmt_args.append('(%d byte encrypted)' % info['size'])
+            else:
+                fmt_args.append('(%d byte document)' % info['size'])
+            fmt_args[2:] = [' '.join(fmt_args[2:])]
+
+            print(fmt % tuple(fmt_args))
 
 
 def run_usage(verbose=False):
@@ -749,33 +814,9 @@ def run_usage(verbose=False):
     configs = '\n'.join(i[0] + i[2] for i in configs if matcher(i[1]))
 
     # Print the help.
-    print('''%(title)-60s||
-                                                            ||
-Usage:                                                      ||
-  pstore machine                                ======||====== Python
-    (look up a machine password)                      ||    || Protected
-  pstore machine +user1 ^user2                        ||    || Password
-    (allow (+) and revoke (^) access)                 ======|| Store
-  pstore -c machine [+user1]                          ||
-    (add machine and allow access)                    ||
-  pstore -P machine [+user1] [^user2]                 ||
-    (change machine password and allow/revoke access)
-  echo Under the cupboard | pstore -ps machine location
-    (add unencrypted location property to machine; use -pl to list, -pg
-     to get and -pe to store *encrypted* properties)
-  pstore -s [propkey][=propvalue]
-    (search for properties, only public property values can be searched,
-     using substring matching, case sensitivity depends on backend)
-
-Command options:
-%(commands)s
-Configuration options:
-%(configs)s%(extra)s''' % {
-        'commands': commands,
-        'configs': configs,
-        'extra': extra,
-        'title': 'pstore %s CLI' % (VERSION_STRING,),
-    })
+    silenced_sigpipe(
+        print_help, title='pstore %s CLI' % (VERSION_STRING,),
+        commands=commands, configs=configs, extra=extra)
 
 
 def pstore(args):
