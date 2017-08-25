@@ -89,7 +89,7 @@ class PStoreInterface(object):
         if not all(i in users for i in revoke):
             raise UserError('one or more users cannot be revoked')
         if any(i in users for i in allow):
-            raise UserError('one or more users already allowed')
+            sys.stderr.write('WARNING: one or more users already allowed\n')
 
         new_users = list(set(users).difference(set(revoke)).union(set(allow)))
         self.alter_permissions(objectid, new_users)
