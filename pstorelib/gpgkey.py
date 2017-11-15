@@ -1,7 +1,7 @@
 # vim: set ts=8 sw=4 sts=4 et ai tw=79:
 """
 pstore-lib -- Python Protected Password Store (Library)
-Copyright (C) 2013,2015  Walter Doekes <wdoekes>, OSSO B.V.
+Copyright (C) 2013,2015,2017  Walter Doekes <wdoekes>, OSSO B.V.
 
     This library is free software; you can redistribute it and/or modify it
     under the terms of the GNU Lesser General Public License as published by
@@ -32,6 +32,7 @@ def get_pubkey_id_from_ascii(data):
     for packet in generator.packets():
         if packet.raw == 6:
             return packet.key_id
+    return None
 
 
 def get_pubkey_id_from_binary(data):
@@ -39,6 +40,7 @@ def get_pubkey_id_from_binary(data):
     for packet in generator.packets():
         if packet.raw == 6:
             return packet.key_id
+    return None
 
 
 if __name__ == '__main__':

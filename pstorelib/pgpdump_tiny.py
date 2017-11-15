@@ -1,7 +1,7 @@
 # vim: set ts=8 sw=4 sts=4 et ai tw=79:
 """
 pstore-lib -- Python Protected Password Store (Library)
-Copyright (C) 2013,2015  Walter Doekes <wdoekes>, OSSO B.V.
+Copyright (C) 2013,2015,2017  Walter Doekes <wdoekes>, OSSO B.V.
 
     This library is free software; you can redistribute it and/or modify it
     under the terms of the GNU Lesser General Public License as published by
@@ -129,21 +129,29 @@ class BinaryData(object):
 
 class AsciiData(BinaryData):
     def __init__(self, data):
-        data = data.strip().replace('\r', '')
-        if not data.startswith('----'):
-            raise ValueError('garbage in input')
+        lines = [i.strip() for i in data.strip().split('\n')]
 
-        lines = data.split('\n')
-        while lines[0].strip() != '':
-            lines.pop(0)
+        if not lines[0].startswith('----'):  # -----BEGIN PGP PUBLIC KEY BLOCK
+            raise ValueError('missing BEGIN PGP PUBLIC KEY BLOCK')
         lines.pop(0)
-        if lines[-1].startswith('----'):
-            lines.pop()
-        if lines[-1].startswith('='):
-            lines.pop()  # drop checksum
 
-        if any(not i.strip() for i in lines):
-            raise ValueError('garbage in input')
+        if not lines[-1].startswith('----'): # -----END PGP PUBLIC KEY BLOCK
+            raise ValueError('missing END PGP PUBLIC KEY BLOCK')
+        lines.pop()
+
+        # Drop optional checksum that starts with '='.
+        if lines[-1].startswith('='):
+            lines.pop()
+
+        # Drop optional headers before the actual data.
+        # E.g. "Version: GnuPG v1.4.11 (GNU/Linux)"
+        if '' in lines:
+            while lines[0] != '':
+                lines.pop(0)
+            lines.pop(0)
+        # Should be only once.
+        if '' in lines:
+            raise ValueError('excess LF in public key block?')
 
         data = ''.join(i.strip() for i in lines)
         decoded = b64decode(data)

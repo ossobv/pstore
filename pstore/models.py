@@ -1,7 +1,7 @@
 # vim: set ts=8 sw=4 sts=4 et ai tw=79:
 """
 django-pstore -- Python Protected Password Store (Django app)
-Copyright (C) 2010,2012,2013,2015  Walter Doekes <wdoekes>, OSSO B.V.
+Copyright (C) 2010,2012,2013,2015,2017  Walter Doekes <wdoekes>, OSSO B.V.
 
     This application is free software; you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published
@@ -27,6 +27,7 @@ from django.db.models.signals import pre_delete
 from django.utils.translation import ugettext_lazy as _
 
 from pstorelib.crypt import encrypts
+from pstorelib.exceptions import CryptError
 
 from pstore.db import Model, AsciiField, BlobField
 from pstore.notify import (notify_object_deletion, notify_publickey_change,
@@ -307,7 +308,10 @@ class Nonce(models.Model):
         assert not self.encrypted
 
         publickey = self.user.publickey
-        self.encrypted = encrypts(self.value, public_key=publickey.key)
+        try:
+            self.encrypted = encrypts(self.value, public_key=publickey.key)
+        except CryptError as e:
+            raise CryptError("Encrypting for '%s' failed" % (self.user,), e)
 
     def save(self, **kwargs):
         # Make sure we have a nonce.

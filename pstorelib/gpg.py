@@ -1,7 +1,7 @@
 # vim: set ts=8 sw=4 sts=4 et ai tw=79:
 """
 pstore-lib -- Python Protected Password Store (Library)
-Copyright (C) 2012,2013,2015,2016  Walter Doekes <wdoekes>, OSSO B.V.
+Copyright (C) 2012,2013,2015-2016  Walter Doekes <wdoekes>, OSSO B.V.
 
     This library is free software; you can redistribute it and/or modify it
     under the terms of the GNU Lesser General Public License as published by
@@ -214,11 +214,14 @@ class GPGCrypt(object):
                              '*existing* writable path in settings; '
                              'e.g. "/tmp"' % (res.imported, res.unchanged))
 
+        # Manually extract the key ID from the public key packet.
         try:
-            key_id = get_pubkey_id_from_ascii(key).decode('ascii')
+            key_id = get_pubkey_id_from_ascii(key)
+            assert key_id is not None, 'no public key packet found'
+            key_id = key_id.decode('ascii')
             key = self.get_key(id=key_id)
-        except AssertionError as e:
-            raise CryptError('GPG quick hack failed; no key found', e)
+        except Exception as e:
+            raise CryptError('GPG key import error', e)
 
         return key
 
