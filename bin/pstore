@@ -448,6 +448,12 @@ def run_command(command, args, config):
                 raise UserError('passwords do not match')
             del new_password2
 
+        try:
+            # If py3, then this is a unistr, and there is no decode.
+            new_password.decode
+        except AttributeError:
+            new_password = new_password.encode('utf-8')
+
     pstore = PStoreInterface(config)
 
     if command == 'create':
