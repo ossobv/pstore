@@ -128,7 +128,8 @@ pstore-dist: isclean README.rst
 	# do the sdist
 	python setup.py sdist
 	##python setup.py register # only needed once
-	#python setup.py sdist upload
+	#LEGACY#python setup.py sdist upload
+	#twine upload dist/pstore-*.tar.gz
 	# clean up
 	$(RM) MANIFEST README.txt setup.py
 
@@ -141,7 +142,8 @@ django-pstore-dist: isclean README.rst
 	# do the sdist
 	python setup.py sdist
 	##python setup.py register # only needed once
-	#python setup.py sdist upload
+	#LEGACY#python setup.py sdist upload
+	#twine upload dist/django-pstore-*.tar.gz
 	# clean up
 	$(RM) MANIFEST README.txt setup.py
 
