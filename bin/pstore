@@ -276,8 +276,8 @@ def parse_options(args):
     try:
         optlist, args = gnu_getopt(
             [args[0]] + rc_args + args[1:],  # inject defaults
-            'hcPp:' + 'ak:l:s:u:v',  # command options + configuration options
-            ('help', 'create', 'chpass', 'lookup-machine', 'propedit',
+            'hVcPp:' + 'ak:l:s:u:v',  # command options + configuration options
+            ('help', 'version', 'create', 'chpass', 'lookup-machine', 'propedit',
              'consistency-check') +
             ('all', 'private-key=', 'search=', 'store-url=', 'user=',
              'verbose')
@@ -299,6 +299,9 @@ def parse_options(args):
         # Command options
         if option in ('--help', '-h'):
             command = 'help'  # always allow -h
+        elif option in ('--version', '-V'):
+            if command != 'help':
+                command = 'version'  # override all but -h
         elif option in ('--create', '-c',
                         '--change-password', '-P',
                         '--propedit', '-p',
@@ -648,16 +651,16 @@ def silenced_sigpipe(callable, *args, **kwargs):
 
 
 def print_help(**kwargs):
-    print('''%(title)-60s||
-                                                            ||
-Usage:                                                      ||
-  pstore machine                                ======||====== Python
-    (look up a machine password)                      ||    || Protected
-  pstore machine +user1 ^user2                        ||    || Password
-    (allow (+) and revoke (^) access)                 ======|| Store
-  pstore -c machine [+user1]                          ||
-    (add machine and allow access)                    ||
-  pstore -P machine [+user1] [^user2]                 ||
+    print('''%(title)s
+                                                --------------
+Usage:                                          | *        * |
+  pstore machine                                |   \_  _/   | Python
+    (look up a machine password)                |  ___\/___  | Protected
+  pstore machine +user1 ^user2                  |    _/\_    | Password
+    (allow (+) and revoke (^) access)           |   /    \   | Store
+  pstore -c machine [+user1]                    | *        * |
+    (add machine and allow access)              --------------
+  pstore -P machine [+user1] [^user2]
     (change machine password and allow/revoke access)
   echo Under the cupboard | pstore -ps machine location
     (add unencrypted location property to machine; use -pl to list, -pg
@@ -801,6 +804,8 @@ def run_usage(verbose=False):
          'Backend URL (supply more as fallbacks)'),
         ('  --verbose, -v         ', 0,
          'Verbose mode (use --help -v for more help)'),
+        ('  --version, -V         ', 1,
+         'Print version'),
     )
 
     # Undocumented environment variables:
@@ -834,11 +839,18 @@ def run_usage(verbose=False):
         commands=commands, configs=configs, extra=extra)
 
 
+def run_version():
+    print('pstore %s CLI' % (VERSION_STRING,))
+
+
 def pstore(args):
     command, args, config = parse_options(args)
 
     if command == 'help':
         run_usage(config['verbose'])
+        sys.exit(0)
+    elif command == 'version':
+        run_version()
         sys.exit(0)
 
     if not config['store_urls']:
