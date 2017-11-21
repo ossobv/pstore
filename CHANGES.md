@@ -4,6 +4,12 @@ pstore :: Python Protected Password Store
 The list of changes.
 
 
+2017-11-21: 1.2.1
+-----------------
+ * CLI, fix -c and -P on python3.
+ * CLI, add --version/-V.
+ * Lib, allow PGP PUBLIC KEY block without headers.
+
 2017-08-25: 1.2.0
 -----------------
  * #1: CLI -c create on an existing object now fails as expected.
