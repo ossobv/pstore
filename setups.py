@@ -2,7 +2,7 @@
 # vim: set ts=8 sw=4 sts=4 et ai tw=79:
 """
 pstore setup -- Python Protected Password Store (setup)
-Copyright (C) 2012,2013,2015  Walter Doekes <wdoekes>, OSSO B.V.
+Copyright (C) 2012,2013,2015,2018  Walter Doekes <wdoekes>, OSSO B.V.
 
 This script is called setups.py and not setup.py. It contains two separate
 setup calls, one for `pstore` and one for `django-pstore`.
@@ -37,7 +37,7 @@ except ImportError:
     VERSION_STRING = None
 
 
-with open('CHANGES.md') as file:
+with open('CHANGES.rst') as file:
     matcher = re.compile(r'^[0-9?]{4}-[0-9?]{2}-[0-9?]{2}: ([0-9].*?)\s*$')
     matches = []
     for line in file:
@@ -48,17 +48,17 @@ with open('CHANGES.md') as file:
     for i in range(1, len(matches)):
         high = matches[i - 1]
         low = matches[i]
-        assert high > low, ('CHANGES.md version order mismatch: %r <= %r' %
+        assert high > low, ('CHANGES.rst version order mismatch: %r <= %r' %
                             (high, low))
     # Double check that the last version equals the version in the pstorelib,
     # if pstorelib is installed already.
     if VERSION_STRING:
-        assert matches[0] == VERSION_STRING, ('pstorelib version does not '
-                                              'match CHANGES.md')
+        assert matches[0] == VERSION_STRING, (
+            'pstorelib version does not match CHANGES.rst')
     # Fetch "current" version
     version = str(matches[0])
 
-with open('README.txt') as file:
+with open('README.rst') as file:
     long_description = file.read()
 
 defaults = {

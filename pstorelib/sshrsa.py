@@ -35,7 +35,7 @@ Dependencies:
 """
 from __future__ import absolute_import
 
-from base64 import b16decode, b64decode, b64encode
+from base64 import b16decode, b64decode, b64encode, binascii
 from hashlib import md5, sha1       # md5 for DES-EDE3-CBC, sha1 for OAEP
 from math import ceil
 from os import urandom
@@ -68,8 +68,14 @@ try:
 except ImportError:
     from pyasn1.v1.codec.ber import decoder as asn1decoder
 
-from pstorelib.exceptions import (CryptError, CryptBadPassword,
-                                  CryptBadPrivKey, CryptBadPubKey)
+from pstorelib.exceptions import (
+    CryptError, CryptBadPassword, CryptBadPrivKey, CryptBadPubKey)
+
+try:
+    long
+except NameError:
+    long = int
+    ord = (lambda x: x)
 
 
 # Only exposing RSACrypt and SSHKeyParser
@@ -115,11 +121,11 @@ class SSHKeyParser(object):
             raise CryptBadPubKey('expected type ssh-rsa', type)
         try:
             blob = b64decode(blob)
-        except:
+        except (binascii.Error, TypeError):
             raise CryptBadPubKey('base64 decode failed', blob)
 
         results = []
-        while blob != '':
+        while blob:
             length = [long(ord(i)) for i in blob[0:4]]
             length = (length[0] << 24 | length[1] << 16 | length[2] << 8 |
                       length[3])
@@ -134,7 +140,7 @@ class SSHKeyParser(object):
         if len(results) != 3:
             raise CryptBadPubKey('expected 3 items in blob, got %d' %
                                  (len(results),), results)
-        if results[0] != 'ssh-rsa':
+        if results[0] != b'ssh-rsa':
             raise CryptBadPubKey('expected type ssh-rsa in blob, got %s' %
                                  (results[0],), results)
 
@@ -171,7 +177,7 @@ class SSHKeyParser(object):
 
         try:
             blob = b64decode(blob)
-        except:
+        except (binascii.Error, TypeError):
             raise CryptBadPrivKey('base64 decode failed', blob)
 
         # If there are lines left, they contain encryption info.
@@ -198,7 +204,7 @@ class SSHKeyParser(object):
             else:
                 key = blob
 
-            if not dek_info and (not key or key[0] != '0'):
+            if not dek_info and (not key or key[0] not in ('0', 0x30)):
                 raise CryptBadPrivKey('expected ASN.1 to begin with 0', key)
 
             try:
@@ -280,10 +286,10 @@ def make_mgf1(hash):
         hLen = hash().digest_size
         if maskLen > (2 ** 32) * hLen:
             raise NotImplementedError('mask too long')
-        T = ''
+        T = b''
         for counter in range(int(ceil(maskLen / float(hLen)))):
             C = long_to_bytes(counter)
-            C = ('\x00' * (4 - len(C))) + C
+            C = (b'\x00' * (4 - len(C))) + C
             assert len(C) == 4, 'counter was too big'
             T += hash(mgfSeed + C).digest()
         assert len(T) >= maskLen, 'generated mask was too short'
@@ -335,17 +341,17 @@ class OAEP(object):
         if mLen > k - 2 * hLen - 2:
             raise CryptError('encrypt message too long')
         # Perform the encoding.
-        PS = '\x00' * (k - mLen - 2 * hLen - 2)
-        DB = lHash + PS + '\x01' + M
+        PS = b'\x00' * (k - mLen - 2 * hLen - 2)
+        DB = lHash + PS + b'\x01' + M
         assert len(DB) == k - hLen - 1, 'DB length is incorrect'
         seed = self.randbytes(hLen)
         dbMask = self.mgf(seed, k - hLen - 1)
         maskedDB = strxor(DB, dbMask)
         seedMask = self.mgf(maskedDB, hLen)
         maskedSeed = strxor(seed, seedMask)
-        return '\x00' + maskedSeed + maskedDB
+        return b'\x00' + maskedSeed + maskedDB
 
-    def decode(self, k, EM, L=''):
+    def decode(self, k, EM, L=b''):
         """
         Decode a message using OAEP.
 
@@ -369,7 +375,7 @@ class OAEP(object):
         # Split the DB string.
         lHash1 = DB[:hLen]
         x01pos = hLen
-        while x01pos < len(DB) and DB[x01pos] != '\x01':
+        while x01pos < len(DB) and DB[x01pos] not in (b'\x01', 1):
             x01pos += 1
         M = DB[(x01pos + 1):]
         # All sanity-checking done at end, to avoid timing attacks.
@@ -378,7 +384,7 @@ class OAEP(object):
             valid = False
         if lHash1 != lHash:    # Mismatched label hash
             valid = False
-        if Y != '\x00':        # Invalid leading byte
+        if Y not in (b'\x00', 0):  # Invalid leading byte
             valid = False
         if not valid:
             raise CryptError('decrypt de-padding failed validation')
@@ -437,7 +443,7 @@ class RSACrypt(object):
         """
         if self.padder:
             data = self.padder.encode(self.padlen, data)
-            assert data[0] == '\x00', 'Expected leading 0-byte from OAEP'
+            assert data[0] == b'\x00', 'Expected leading 0-byte from OAEP'
         results = self.rsa.encrypt(data, '')
         assert len(results) == 1
         return results[0]
@@ -451,8 +457,8 @@ class RSACrypt(object):
         if self.padder:
             # Must pad data back to padlen (see assertion above). Note that
             # unencoded binary data suffers from the same problem.
-            result = self.padder.decode(self.padlen,
-                                        result.rjust(self.padlen, '\x00'))
+            result = self.padder.decode(
+                self.padlen, result.rjust(self.padlen, b'\x00'))
         return result
 
 
@@ -513,7 +519,7 @@ if __name__ == '__main__':
             return bytes_to_long(b64decode(value))
 
         def test_bignum(self):
-            input = 1234567890123456789012345678901234567890L
+            input = 1234567890123456789012345678901234567890
             text = b64encode(long_to_bytes(input))
             output = self.bignum(text)
             self.assertEqual(output, input)
@@ -551,7 +557,7 @@ if __name__ == '__main__':
                     tfde004+B49G25CvNYSdiRTHUTiYbX3zDrZjuom7MvxhSfode9HrlYFnC7
                     FYY+qOoWCZLzWjg16AtjVODtupN7omG/4je/0d7auqIw5aGEI4R6TIs=
                 '''),
-                'e': 35L,
+                'e': 35,
             })
 
         def test_parse_public_ssh_key_2(self):
@@ -564,7 +570,7 @@ if __name__ == '__main__':
                     QF4J5mdEHuyAJrHdFRq7if5+OiGUuGOVEnAfzWjHgvErranLZo+6XRMsnvM
                     G6DiD/Ys+uySw7tFw3mxzDgNxYbXaTc/Bbnqy6hi7/JSfXAqjSqKE=
                 '''),
-                'e': 35L,
+                'e': 35,
             })
 
         def test_parse_private_ssh_key_1(self):
@@ -577,7 +583,7 @@ if __name__ == '__main__':
                     fde004+B49G25CvNYSdiRTHUTiYbX3zDrZjuom7MvxhSfode9HrlYFnC7FY
                     Y+qOoWCZLzWjg16AtjVODtupN7omG/4je/0d7auqIw5aGEI4R6TIs=
                 '''),
-                'e': 35L,
+                'e': 35,
                 'd': self.bignum('''
                     mugReWs7tkS4uMXYbkYrwRBvfdrIhRZQi7vK6f6RZMp85mBsZWqlzNgUmSW
                     0oL7W1Spoew+uCCJ8GZmQgfCSKk649LN6jM4zRxvd0MKebRL0GgogcrK4PI
@@ -604,7 +610,7 @@ if __name__ == '__main__':
                     QF4J5mdEHuyAJrHdFRq7if5+OiGUuGOVEnAfzWjHgvErranLZo+6XRMsnvM
                     G6DiD/Ys+uySw7tFw3mxzDgNxYbXaTc/Bbnqy6hi7/JSfXAqjSqKE=
                 '''),
-                'e': 35L,
+                'e': 35,
                 'd': self.bignum('''
                     l4c68Ugu5uI/f/gbyK2U7xhL0VurV6qMB+ad0GkRJGODAL8wK9LuUv3OSIt
                     0pxvKyhDplxxgVu1L/MbInOxoS3kADYKzbyga0JI3klJmQ9R1yqZcIspjuC
@@ -628,7 +634,7 @@ if __name__ == '__main__':
                     QF4J5mdEHuyAJrHdFRq7if5+OiGUuGOVEnAfzWjHgvErranLZo+6XRMsnvM
                     G6DiD/Ys+uySw7tFw3mxzDgNxYbXaTc/Bbnqy6hi7/JSfXAqjSqKE=
                 '''),
-                e=35L
+                e=long(35)
             )
 
             # With the OAEP() padder the output is in (127, 128). Without it,
@@ -642,7 +648,7 @@ if __name__ == '__main__':
                     QF4J5mdEHuyAJrHdFRq7if5+OiGUuGOVEnAfzWjHgvErranLZo+6XRMsnvM
                     G6DiD/Ys+uySw7tFw3mxzDgNxYbXaTc/Bbnqy6hi7/JSfXAqjSqKE=
                 '''),
-                e=35L,
+                e=long(35),
                 d=self.bignum('''
                     l4c68Ugu5uI/f/gbyK2U7xhL0VurV6qMB+ad0GkRJGODAL8wK9LuUv3OSIt
                     0pxvKyhDplxxgVu1L/MbInOxoS3kADYKzbyga0JI3klJmQ9R1yqZcIspjuC

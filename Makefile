@@ -6,10 +6,10 @@ default: dist
 
 clean:
 	find . -type f '(' -name '*.pyo' -or -name '*.pyc' ')' | xargs -d\\n $(RM)
-	$(RM) README.txt setup.py # these are created for every *-dist rule
+	$(RM) setup.py # these are created for every *-dist rule
 
 distclean: clean
-	$(RM) -r README.rst dist
+	$(RM) -r dist
 
 isclean:
 	# Check that there are no leftover unversioned python files.
@@ -18,18 +18,14 @@ isclean:
 	# due to its find_package_module() function.)
 	! (git status | sed -e '1,/^# Untracked/d;/^#\t.*\.py$$/!d;s/^#\t/Untracked: /' | grep .)
 	# These files should be created AND removed by the *-dist rules.
-	test ! -f README.txt
 	test ! -f setup.py
 
 
-.PHONY: dist doc
+.PHONY: dist
 
-dist: doc pstore-dist django-pstore-dist pstore-full
+dist: pstore-dist django-pstore-dist pstore-full
 	# Eggs are out, tgzs are in. Building sdist should do the trick, as
 	# long as we hack stuff around to create a setup.py for both.
-
-doc: README.rst
-README.rst: README.md
 
 
 .PHONY: pep pyclean htmlclean
@@ -102,8 +98,9 @@ testlib:
 
 testcopyright:
 	@printf '\n** SEARCHING FOR MISSING COPYRIGHT TEXT **\n\n'
-	@find . -type -f '(' -name '*.py' -o -name pstore ')' | \
-	  xargs -d\\n grep -c ^Copyright | sed '/:0$$/!d;s/:0$$//'
+	@! find . -type f '(' -name '*.py' -o -name pstore ')' | \
+	  xargs -d\\n grep -cE '^(# )?Copyright' | sed '/:0$$/!d;s/:0$$//' | \
+	  while read f; do test -s "$$f" && echo "$$f"; done | grep ''
 	@echo
 
 testtodo: _testtodo
@@ -123,29 +120,25 @@ pstore-dist: isclean README.rst
 	# sdist likes a setup.py
 	cat setups.py | sed -e "/^if __name__ == '__main__':/,\$$d" > setup.py
 	echo 'setup_pstore()' >> setup.py
-	# sdist likes a reStructuredText README.txt
-	cp -n README.rst README.txt
 	# do the sdist
 	python setup.py sdist
 	##python setup.py register # only needed once
 	#LEGACY#python setup.py sdist upload
 	#twine upload dist/pstore-*.tar.gz
 	# clean up
-	$(RM) MANIFEST README.txt setup.py
+	$(RM) MANIFEST setup.py
 
 django-pstore-dist: isclean README.rst
 	# sdist likes a setup.py
 	cat setups.py | sed -e "/^if __name__ == '__main__':/,\$$d" > setup.py
 	echo 'setup_django_pstore()' >> setup.py
-	# sdist likes a reStructuredText README.txt
-	cp -n README.rst README.txt
 	# do the sdist
 	python setup.py sdist
 	##python setup.py register # only needed once
 	#LEGACY#python setup.py sdist upload
 	#twine upload dist/django-pstore-*.tar.gz
 	# clean up
-	$(RM) MANIFEST README.txt setup.py
+	$(RM) MANIFEST setup.py
 
 pstore-full: dist/pstore-full-latest.tar.gz
 
@@ -154,14 +147,3 @@ dist/pstore-full-latest.tar.gz: dummy
 	tar zcf dist/pstore-full-latest.tar.gz --no-recursion `git ls-files`
 
 dummy:
-
-%.rst: %.md
-	# pandoc does its tricks nicely. But we need to tweak it a little bit.
-	sh -c 'pandoc $< -t rst | sed -e "\
-		s/ <#[^> ]*>//g; \
-		3s/^$$/\n.. _\`back to top\`:\n/; \
-		s/\(\`[^\`]*\`\)__/\1_/g \
-		" > $@'
-	# PyPI does not like warnings/errors
-	# (get rst2html from python-docutils)
-	sh -c 'rst2html $@ --no-raw --strict >/dev/null || ( rm -f $@; false )'

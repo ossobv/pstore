@@ -86,9 +86,9 @@ class PStoreCrypt(object):
         Can raise a CryptBadPassword or CryptBadPrivKey.
         """
         if not hasattr(self, '_sshrsa_privkey'):
-            if isinstance(self.sshrsa_privkey_file, basestring):
+            if not hasattr(self.sshrsa_privkey_file, 'read'):
                 try:
-                    file = open(self.sshrsa_privkey_file, 'r')
+                    file = open(self.sshrsa_privkey_file, 'rb')
                     try:
                         key_data = file.read()
                     finally:
@@ -112,7 +112,8 @@ class PStoreCrypt(object):
                 parser.set_password_cb((lambda name, *args: (name + '2',
                                                              False)))
 
-            self._sshrsa_privkey = parser.parse_private(key_data)
+            self._sshrsa_privkey = parser.parse_private(
+                key_data.decode('ascii'))
         return self._sshrsa_privkey
 
 
@@ -458,75 +459,76 @@ if __name__ == '__main__':
         ''').strip()
 
         def setUp(self):
-            PStoreCrypt.create(askpass=PStoreCrypt.ASKPASS_USERNAME2,
-                               sshrsa_privkey_file=BytesIO(self.JOE_PRIVKEY))
+            PStoreCrypt.create(
+                askpass=PStoreCrypt.ASKPASS_USERNAME2,
+                sshrsa_privkey_file=BytesIO(self.JOE_PRIVKEY.encode('ascii')))
 
         def tearDown(self):
             PStoreCrypt.destroy()
 
         def test_decrypts_gpg(self):
-            input = ('hIwDpCCsUhak5FsBA/46Fi5ubNMPWRHAiPZdoWrazqhJfg9y9+vAK2'
-                     'vheNWVkpjIXvCExwzgaTmSyghbkh1SI44gybNo0RoTD/a/HxIkxN+A'
-                     'EcD1+XVYOhGjUcWeS8hOk1aSmlt0caaunLUphJuN2i0v5EnomxK3ZD'
-                     'qM9EyXIIsVeQxWDeDYMKEaC0Yp+9JMAWC9489HCPjwwPuyhn3Xn1Lj'
-                     'X2EWOL0pSIuYrBrDba3i56z7teTTMsc69qqta5k/52OAKHzR+Evh4E'
-                     'lUlI/JSIptkz8GkXalBxFLuA==')
+            input = (b'hIwDpCCsUhak5FsBA/46Fi5ubNMPWRHAiPZdoWrazqhJfg9y9+vAK2'
+                     b'vheNWVkpjIXvCExwzgaTmSyghbkh1SI44gybNo0RoTD/a/HxIkxN+A'
+                     b'EcD1+XVYOhGjUcWeS8hOk1aSmlt0caaunLUphJuN2i0v5EnomxK3ZD'
+                     b'qM9EyXIIsVeQxWDeDYMKEaC0Yp+9JMAWC9489HCPjwwPuyhn3Xn1Lj'
+                     b'X2EWOL0pSIuYrBrDba3i56z7teTTMsc69qqta5k/52OAKHzR+Evh4E'
+                     b'lUlI/JSIptkz8GkXalBxFLuA==')
             input = b64decode(input)
             decrypted = decrypts(input, type='gpg')
-            self.assertEquals(decrypted, 'mySuperSecret!')
+            self.assertEqual(decrypted, b'mySuperSecret!')
 
         def test_encrypts_gpg(self):
-            input = 'mySuperSecret!'
+            input = b'mySuperSecret!'
             encrypted = encrypts(input, self.ALEX_PUBKEY)
-            self.assertNotEquals(encrypted, input)  # output changes at will
+            self.assertNotEqual(encrypted, input)  # output changes at will
 
         def test_encrypts_decrypts_gpg(self):
-            input = "is it john doe's birth day?"
+            input = b"is it john doe's birth day?"
             encrypted = encrypts(input, self.ALEX_PUBKEY)
-            self.assertNotEquals(encrypted, input)  # output changes at will
+            self.assertNotEqual(encrypted, input)  # output changes at will
             decrypted = decrypts(encrypted, type='gpg')
-            self.assertEquals(decrypted, input)
+            self.assertEqual(decrypted, input)
 
         def test_decrypts_sshrsa(self):
-            input = ('Y9bQbUMFQ0OGvBW/iQ0PDdMy5PmsJvsxONzLKjc6uyQ3yvkZHlH/V0'
-                     'OQOAc/nnMpsJfnzeLv6oZfGzRffKrU90D712f2cvpnI4/FfSGI59HS'
-                     '109Q9QilXAjMLqe06P6ceOI2HtxFw6/rIDCrY9/J75+MyHJBSAZ3uw'
-                     'f/lKTx1xM=')
+            input = (b'Y9bQbUMFQ0OGvBW/iQ0PDdMy5PmsJvsxONzLKjc6uyQ3yvkZHlH/V0'
+                     b'OQOAc/nnMpsJfnzeLv6oZfGzRffKrU90D712f2cvpnI4/FfSGI59HS'
+                     b'109Q9QilXAjMLqe06P6ceOI2HtxFw6/rIDCrY9/J75+MyHJBSAZ3uw'
+                     b'f/lKTx1xM=')
             input = b64decode(input)
             decrypted = decrypts(input, type='sshrsa')
-            self.assertEquals(decrypted, 'mySuperSecret!')
+            self.assertEqual(decrypted, b'mySuperSecret!')
 
         def test_encrypts_sshrsa(self):
-            input = 'mySuperSecret!'
+            input = b'mySuperSecret!'
             encrypted = encrypts(input, self.JOE_PUBKEY)
-            self.assertNotEquals(encrypted, input)  # output changes at will
+            self.assertNotEqual(encrypted, input)  # output changes at will
 
         def test_encrypts_decrypts_sshrsa(self):
-            input = "is it john doe's birth day?"
+            input = b"is it john doe's birth day?"
             encrypted = encrypts(input, self.JOE_PUBKEY)
-            self.assertNotEquals(encrypted, input)  # output changes at will
+            self.assertNotEqual(encrypted, input)  # output changes at will
             decrypted = decrypts(encrypted, type='sshrsa')
-            self.assertEquals(decrypted, input)
+            self.assertEqual(decrypted, input)
 
         def test_cryptowriter_none(self):
-            source = 'no encryption'
+            source = b'no encryption'
             # The writer should support writing multiple times.
             writer = CryptoWriter(data=source)
-            self.assertEquals(writer.encrypt_with(None).read(), source)
-            self.assertEquals(writer.encrypt_with(None).read(), source)
+            self.assertEqual(writer.encrypt_with(None).read(), source)
+            self.assertEqual(writer.encrypt_with(None).read(), source)
             writer = CryptoWriter(fp=BytesIO(source))
-            self.assertEquals(writer.encrypt_with(None).read(), source)
-            self.assertEquals(writer.encrypt_with(None).read(), source)
+            self.assertEqual(writer.encrypt_with(None).read(), source)
+            self.assertEqual(writer.encrypt_with(None).read(), source)
 
         def test_cryptoreader_none(self):
-            source = 'no encryption'
+            source = b'no encryption'
             reader = CryptoReader(data=source, enctype='none')
-            self.assertEquals(reader.decrypt_with(None).read(), source)
+            self.assertEqual(reader.decrypt_with(None).read(), source)
             reader = CryptoReader(fp=BytesIO(source), enctype='none')
-            self.assertEquals(reader.decrypt_with(None).read(), source)
+            self.assertEqual(reader.decrypt_with(None).read(), source)
 
         def test_cryptoreader_gpg(self):
-            source = 'gpg encrypted'
+            source = b'gpg encrypted'
             encrypted = ('hIwDpCCsUhak5FsBA/9DeiA9hg+bQUGnkE4OeW1btR0SWr2Pt'
                          'sP5O8YgEh+ZcZRB/kQlHdaV580+bttXtmU3KE30d6KWMADWqI'
                          'hlLXR3Rk7ZswsgN59u8U2IaEuAR15M8rPS7dEFz4JT3Jic+zJ'
@@ -535,22 +537,22 @@ if __name__ == '__main__':
                          '3k49/hGTmRbzGqrEQm0zY220OISBqVkdiFUYNDI/EKeFVaw')
             encrypted = b64decode(encrypted)
             reader = CryptoReader(data=encrypted, enctype='gpg')
-            self.assertEquals(reader.decrypt_with(None).read(), source)
+            self.assertEqual(reader.decrypt_with(None).read(), source)
             reader = CryptoReader(fp=BytesIO(encrypted), enctype='gpg')
-            self.assertEquals(reader.decrypt_with(None).read(), source)
+            self.assertEqual(reader.decrypt_with(None).read(), source)
 
         def test_cryptoreader_sshrsa(self):
-            source = 'sshrsa encrypted'
+            source = b'sshrsa encrypted'
             encrypted = ('lTc467y3eLwlC2wy7TOgCOzzoo9OGq3DwbVCfCsHGRf'
                          'TmIElctu8a5uQvZ5+yAsTq2AvHYBZ3s4q3aM2tpNC0s'
                          'ophQ+XPziPkZBdV04Cof9rvYXKwSuuyqbKblOjOHsRc'
                          'KguppEfSWwUnZuMRxxgoJHfvR8GeHMFE0mngGF/uyc=')
             encrypted = b64decode(encrypted)
             reader = CryptoReader(data=encrypted, enctype='sshrsa')
-            self.assertEquals(reader.decrypt_with(None).read(), source)
+            self.assertEqual(reader.decrypt_with(None).read(), source)
             reader = CryptoReader(fp=BytesIO(encrypted),
                                   enctype='sshrsa')
-            self.assertEquals(reader.decrypt_with(None).read(), source)
+            self.assertEqual(reader.decrypt_with(None).read(), source)
 
         def test_streamed_cryptowriter_and_reader(self):
             class ReadOnce(object):
@@ -575,10 +577,10 @@ if __name__ == '__main__':
 
             reader = CryptoReader(fp=fp1, enctype='gpg')
             decfp = reader.decrypt_with(None)
-            self.assertEquals(decfp.read(), source)
+            self.assertEqual(decfp.read(), source)
 
             reader = CryptoReader(fp=fp2, enctype='sshrsa')
             decfp = reader.decrypt_with(self.JOE_PRIVKEY)
-            self.assertEquals(decfp.read(), source)
+            self.assertEqual(decfp.read(), source)
 
     main()  # unittest.main

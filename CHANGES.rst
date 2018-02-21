@@ -4,6 +4,10 @@ pstore :: Python Protected Password Store
 The list of changes.
 
 
+2017-11-21: 1.2.1_dev
+---------------------
+ * Replace markdown docs with rst.
+
 2017-11-21: 1.2.1
 -----------------
  * CLI, fix -c and -P on python3.
@@ -15,7 +19,7 @@ The list of changes.
  * #1: CLI -c create on an existing object now fails as expected.
  * #5: CLI client is now Python3 compatible. Also fix issue with certain
    binary output.
- * #8: CLI -s search now does `[KEY=][VALUE]`, not `[KEY][=VALUE]`.
+ * #8: CLI -s search now does ``[KEY=][VALUE]``, not ``[KEY][=VALUE]``.
  * #10/#18: Be more tolerant of +excess +users.
  * #15: Ignore SIGPIPE on stdout.
  * #17: CLI search which gets too many results now shows clear error.
@@ -24,18 +28,18 @@ The list of changes.
 2016-06-02: 1.1.3
 -----------------
  * Add example workaround in settings.template so we can run with
-   DEBUG=True on MySQL without getting "Invalid utf8 character string"
+   ``DEBUG=True`` on MySQL without getting "Invalid utf8 character string"
    errors. Reported by Devhouse Spindle.
 
 2015-10-14: 1.1.2
 -----------------
- * Remove `download_url` from setup.py as part of PEP470 change for
+ * Remove ``download_url`` from setup.py as part of PEP470 change for
    PyPI.
 
 2015-05-26: 1.1.1
 -----------------
  * Fix property list problem: superusers would see more properties
-   than expected with options -a -pl.
+   than expected with options ``-a -pl``.
 
 2015-05-21: 1.1.0
 -----------------
@@ -83,10 +87,9 @@ The list of changes.
  * Allow the integration test to use an already running django-pstore.
    This aids in debugging problems.
  * Document how Large File issues may be solved.
- * Take version info from the CHANGES.md.
+ * Take version info from the CHANGES.rst.
  * Use a single version number all over the project.
 
 2013-04-15: 0.95rc4
 -------------------
  * There was no changelog.
- * vim: set syntax=markdown tw=72:

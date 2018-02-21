@@ -152,17 +152,17 @@ if __name__ == '__main__':
             self.assertFalse(can_seek(stdin))
 
         def test_get_size_bytesio(self):
-            self.assertEquals(get_size(BytesIO('12345')), 5)
+            self.assertEqual(get_size(BytesIO(b'12345')), 5)
 
         def test_get_size_file(self):
             with TemporaryFile() as t:
-                t.write('12345')
-                self.assertEquals(get_size(t), 5)
-                t.write('1')
-                self.assertEquals(get_size(t), 6)
+                t.write(b'12345')
+                self.assertEqual(get_size(t), 5)
+                t.write(b'1')
+                self.assertEqual(get_size(t), 6)
 
         def test_get_size_stdin(self):
-            self.assertEquals(get_size(stdin), -1)
+            self.assertEqual(get_size(stdin), -1)
 
     class TestFileWithoutTrailingEnter(TestCase):
         def create_child(self):
@@ -171,11 +171,11 @@ if __name__ == '__main__':
             childpid = os.fork()
             if not childpid:
                 os.close(rp)
-                self.wf = os.fdopen(wp, 'w')
+                self.wf = os.fdopen(wp, 'wb')
                 return True
 
             os.close(wp)
-            self.rf = os.fdopen(rp, 'r')
+            self.rf = os.fdopen(rp, 'rb')
             self.childpid = childpid
             return False
 
@@ -189,67 +189,67 @@ if __name__ == '__main__':
 
         def test_selftest(self):
             if self.create_child():
-                self.wf.write('test\n')
+                self.wf.write(b'test\n')
                 self.wf.flush()
                 self.teardown_child()
             else:
-                self.assertEquals(self.rf.read(5), 'test\n')
+                self.assertEqual(self.rf.read(5), b'test\n')
                 self.teardown_parent()
 
         def test_trailing_nolf(self):
             if self.create_child():
-                self.wf.write('ABC\nDEF')
+                self.wf.write(b'ABC\nDEF')
                 self.teardown_child()
             else:
                 wrapped = FileWithoutTrailingEnter(self.rf)
-                self.assertEquals(wrapped.read(4), 'ABC\n')
-                self.assertEquals(wrapped.read(-1), 'DEF')
+                self.assertEqual(wrapped.read(4), b'ABC\n')
+                self.assertEqual(wrapped.read(-1), b'DEF')
                 self.teardown_parent()
 
         def test_trailing_nolf2(self):
             if self.create_child():
-                self.wf.write('ABC\nDEF')
+                self.wf.write(b'ABC\nDEF')
                 self.teardown_child()
             else:
                 wrapped = FileWithoutTrailingEnter(self.rf)
-                self.assertEquals(wrapped.read(4), 'ABC\n')
-                self.assertEquals(wrapped.read(3), 'DEF')
-                self.assertEquals(wrapped.read(2), '')
+                self.assertEqual(wrapped.read(4), b'ABC\n')
+                self.assertEqual(wrapped.read(3), b'DEF')
+                self.assertEqual(wrapped.read(2), b'')
                 self.teardown_parent()
 
         def test_trailing_1lf(self):
             if self.create_child():
-                self.wf.write('ABC\nDEF\n')
+                self.wf.write(b'ABC\nDEF\n')
                 self.teardown_child()
             else:
                 wrapped = FileWithoutTrailingEnter(self.rf)
-                self.assertEquals(wrapped.read(4), 'ABC\n')
-                self.assertEquals(wrapped.read(-1), 'DEF')
+                self.assertEqual(wrapped.read(4), b'ABC\n')
+                self.assertEqual(wrapped.read(-1), b'DEF')
                 self.teardown_parent()
 
         def test_trailing_2crlf(self):
             if self.create_child():
-                self.wf.write('ABC\n\r\n\r\n')
+                self.wf.write(b'ABC\n\r\n\r\n')
                 self.teardown_child()
             else:
                 wrapped = FileWithoutTrailingEnter(self.rf)
-                self.assertEquals(wrapped.read(32), 'ABC\n\r\n')
+                self.assertEqual(wrapped.read(32), b'ABC\n\r\n')
                 self.teardown_parent()
 
         def test_trailing_2lf(self):
             if self.create_child():
-                self.wf.write('ABC')
+                self.wf.write(b'ABC')
                 self.wf.flush()
-                self.wf.write('DEF\n')
+                self.wf.write(b'DEF\n')
                 self.wf.flush()
-                self.wf.write('\n\n')
+                self.wf.write(b'\n\n')
                 self.wf.flush()
                 self.teardown_child()
             else:
                 wrapped = FileWithoutTrailingEnter(self.rf)
-                self.assertEquals(wrapped.read(4), 'ABCD')
-                self.assertEquals(wrapped.read(3), 'EF\n')
-                self.assertEquals(wrapped.read(2), '\n')
+                self.assertEqual(wrapped.read(4), b'ABCD')
+                self.assertEqual(wrapped.read(3), b'EF\n')
+                self.assertEqual(wrapped.read(2), b'\n')
                 self.teardown_parent()
 
     main()  # unittest.main()

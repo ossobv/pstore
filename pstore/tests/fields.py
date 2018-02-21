@@ -33,7 +33,7 @@ class AsciiTest(TestCase):
 
         # Lookup by id and check name validity (downcast to ascii)
         prop2 = Property.objects.get(id=prop.id)
-        self.assertEquals(prop2.name, 'unicode-?')
+        self.assertEqual(prop2.name, 'unicode-?')
 
     def test_lookup(self):
         obj = Object.objects.create(identifier='test-server')
@@ -41,7 +41,7 @@ class AsciiTest(TestCase):
 
         # Lookup by name (should be downcast to ascii)
         prop2 = Property.objects.get(name=u'unicode-\u20ac')
-        self.assertEquals(prop2.id, prop.id)
+        self.assertEqual(prop2.id, prop.id)
 
 
 class BlobTest(TestCase):
@@ -56,7 +56,7 @@ class BlobTest(TestCase):
 
         # Lookup and compare
         prop2 = Property.objects.get(id=prop_id)
-        self.assertEquals(prop2.value, binary)
+        self.assertEqual(prop2.value, binary)
         self.assertTrue(isinstance(prop2.value, str))  # non-unicode
 
     def test_lowascii(self):
@@ -71,14 +71,14 @@ class BlobTest(TestCase):
 
         # Lookup and compare
         prop2 = Property.objects.get(id=prop_id)
-        self.assertEquals(prop2.value, binary)
+        self.assertEqual(prop2.value, binary)
         self.assertTrue(isinstance(prop2.value, str))  # non-unicode
 
     def test_long(self):
         data512 = (('A' * 127 + '\n') + ('B' * 127 + '\n') +
                    ('C' * 127 + '\n') + ('C' * 127 + '\n'))
         data = (4096 * (2 * data512)) + '..tail'  # 4MB and a little
-        self.assertEquals(len(data), 4096 * 1024 + 6)
+        self.assertEqual(len(data), 4096 * 1024 + 6)
 
         obj = Object.objects.create(identifier='test-server')
         prop = Property.objects.create(object=obj, name='long', value=data)
@@ -87,5 +87,5 @@ class BlobTest(TestCase):
 
         # Lookup and compare
         prop2 = Property.objects.get(id=prop_id)
-        self.assertEquals(prop2.value, data)
+        self.assertEqual(prop2.value, data)
         self.assertTrue(isinstance(prop2.value, str))  # non-unicode

@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Copyright (C) 2016,2018  Walter Doekes <wdoekes>, OSSO B.V.
 from __future__ import print_function
 import os
 import signal

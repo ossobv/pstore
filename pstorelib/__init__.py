@@ -1,7 +1,7 @@
 # vim: set ts=8 sw=4 sts=4 et ai tw=79:
 """
 pstore-lib -- Python Protected Password Store (Library)
-Copyright (C) 2012,2013,2015,2017  Walter Doekes <wdoekes>, OSSO B.V.
+Copyright (C) 2012,2013,2015,2017,2018  Walter Doekes <wdoekes>, OSSO B.V.
 
     This library is free software; you can redistribute it and/or modify it
     under the terms of the GNU Lesser General Public License as published by
@@ -25,5 +25,5 @@ __all__ = ('VERSION', 'VERSION_STRING', 'bytes', 'crypt', 'exceptions',
            'server')
 # http://docs.python.org/2/tutorial/modules.html#importing-from-a-package
 
-VERSION = (1, 2, 1)
-VERSION_STRING = '1.2.1'
+VERSION = (1, 2, 1, 'dev')
+VERSION_STRING = '1.2.1_dev'

@@ -367,7 +367,7 @@ if __name__ == '__main__':
                 g.decrypt(input=input, output=output)
                 decrypted = output.read()
 
-                self.assertEquals(decrypted, source)
+                self.assertEqual(decrypted, source)
 
         # FIXME: cover more with the unit tests
 

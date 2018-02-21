@@ -34,8 +34,6 @@ List of items to do
 * Do we need to add a post-success-view audit log? Or a post-failure-view log entry?
 
 * Document that you may want to keep some kind of history using database dumps.
-* http://tmpvar.com/markdown.html
-* Make CODING.md markdown.
 * Add manpage.
 
 * Fix the new-server-creation property/allowed checks.
