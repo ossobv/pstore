@@ -8,6 +8,7 @@ The list of changes.
 ---------------------
  * Replace markdown docs with rst.
  * Fix so tests work with py3.
+ * First warn when keys expire in less than 25 days.
 
 2017-11-21: 1.2.1
 -----------------
