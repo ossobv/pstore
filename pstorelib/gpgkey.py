@@ -31,7 +31,7 @@ def get_pubkey_id_from_ascii(data):
     generator = AsciiData(data)
     for packet in generator.packets():
         if packet.raw == 6:
-            return packet.key_id
+            return packet.key_id.decode('ascii')
     return None
 
 
@@ -39,7 +39,7 @@ def get_pubkey_id_from_binary(data):
     generator = BinaryData(data)
     for packet in generator.packets():
         if packet.raw == 6:
-            return packet.key_id
+            return packet.key_id.decode('ascii')
     return None
 
 

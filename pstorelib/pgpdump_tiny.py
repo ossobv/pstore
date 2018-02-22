@@ -352,7 +352,7 @@ if __name__ == '__main__':
             object = class_(data)
             for packet in object.packets():
                 if packet.raw == 6:
-                    return packet.key_id
+                    return packet.key_id.decode('ascii')
 
         def test_get_pubkey_id_from_ascii(self):
             value = self.get_pubkey_id_from_(self.HARM_PUBKEY_ASCII,

@@ -223,6 +223,7 @@ class CryptoWriter(object):
             input = self.fp.read()
         else:
             input = self.data
+        assert isinstance(input, bytes)
 
         # NOTE: We're not doing tempfiles here.. the sshrsa encryption method
         # is currently limited to very few bytes anyway.
@@ -343,7 +344,7 @@ class CryptoReader(object):
         if not private_key:
             private_key = PStoreCrypt.get().sshrsa_privkey
         # If something was supplied, make sure it already "parsed".
-        elif isinstance(private_key, basestring):
+        elif isinstance(private_key, str):
             parser = sshrsa.SSHKeyParser()
             private_key = parser.parse_private(private_key)
 
@@ -569,7 +570,7 @@ if __name__ == '__main__':
                     self.content = self.content[size:]
                     return ret
 
-            source = 'a bit of data'
+            source = b'a bit of data'
 
             writer = CryptoWriter(fp=ReadOnce(source))
             fp1 = writer.encrypt_with(self.ALEX_PUBKEY)

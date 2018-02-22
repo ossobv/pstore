@@ -218,7 +218,6 @@ class GPGCrypt(object):
         try:
             key_id = get_pubkey_id_from_ascii(key)
             assert key_id is not None, 'no public key packet found'
-            key_id = key_id.decode('ascii')
             key = self.get_key(id=key_id)
         except Exception as e:
             raise CryptError('GPG key import error', e)
@@ -343,7 +342,7 @@ if __name__ == '__main__':
             g = GPGCrypt()
             g.set_password_cb(self.password_callback)
 
-            source = 'sEcReT!'
+            source = b'sEcReT!'
 
             # FIXME/TODO: charge the GPGCrypt with the respective pgp public
             # and private keys before attempting any of this..

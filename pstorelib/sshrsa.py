@@ -144,7 +144,7 @@ class SSHKeyParser(object):
             raise CryptBadPubKey('expected type ssh-rsa in blob, got %s' %
                                  (results[0],), results)
 
-        type = results[0]
+        type = results[0].decode('ascii')
         rsa_e = bytes_to_long(results[1])
         rsa_n = bytes_to_long(results[2])
 
@@ -249,12 +249,14 @@ class SSHKeyParser(object):
 
         # Get password from user.
         password, allow_caching = self.password_cb()
+        if not isinstance(password, bytes):
+            password = password.encode('ascii')
         del allow_caching
 
         # Convert password to 24 bytes for 3DES.
-        des_password = ''
+        des_password = b''
         while len(des_password) < 24:
-            tmp = ''
+            tmp = b''
             if len(des_password):
                 tmp = des_password
             tmp += password + salt_and_iv
@@ -320,7 +322,7 @@ class OAEP(object):
         self.hash = hash
         self.mgf = mgf
 
-    def encode(self, k, M, L=''):
+    def encode(self, k, M, L=b''):
         """
         Encode a message using OAEP.
 
@@ -335,6 +337,7 @@ class OAEP(object):
             if limit and len(L) > limit:
                 raise CryptError('encrypt label too long')
         lHash = self.hash(L).digest()
+        assert isinstance(lHash, bytes)
         # Check length of message against size of key modulus
         mLen = len(M)
         hLen = len(lHash)
@@ -362,6 +365,7 @@ class OAEP(object):
         """
         # Generate label hash, for sanity checking.
         lHash = self.hash(L).digest()
+        assert isinstance(lHash, bytes)
         hLen = len(lHash)
         # Split the encoded message.
         Y = EM[0]
@@ -442,9 +446,10 @@ class RSACrypt(object):
         Encrypt the data.
         """
         if self.padder:
+            assert isinstance(data, bytes), data
             data = self.padder.encode(self.padlen, data)
-            assert data[0] == b'\x00', 'Expected leading 0-byte from OAEP'
-        results = self.rsa.encrypt(data, '')
+            assert data[0] in (b'\x00', 0), 'Expected leading 0-byte from OAEP'
+        results = self.rsa.encrypt(data, b'')
         assert len(results) == 1
         return results[0]
 
@@ -526,7 +531,7 @@ if __name__ == '__main__':
 
         def test_OAEP_1(self):
             oaep = OAEP()
-            data = 'Hello world!'
+            data = b'Hello world!'
             enc1 = oaep.encode(128, data)
             enc2 = oaep.encode(128, data)
             # The random generator in OAEP should ensure that enc1 != enc2
@@ -545,7 +550,7 @@ if __name__ == '__main__':
             enc = b64decode(input)
             oaep = OAEP()
             dec = oaep.decode(128, enc)
-            self.assertEqual(dec, 'Hello world!')
+            self.assertEqual(dec, b'Hello world!')
 
         def test_parse_public_ssh_key_1(self):
             parser = SSHKeyParser()
@@ -627,7 +632,7 @@ if __name__ == '__main__':
             })
 
         def test_rsawrapper(self):
-            data = 'Hello world!'
+            data = b'Hello world!'
             crypt = RSACrypt(
                 n=self.bignum('''
                     qxSM3t3iX4OSBBgfXnFmFjQ0kYiHpQrgKfPbd7BuMVeT6BGp/+4l2ZIq9xE
