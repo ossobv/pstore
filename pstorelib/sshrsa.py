@@ -2,7 +2,7 @@
 # BEWARE: this is not py3-safe: should be removed..
 """
 pstore-lib -- Python Protected Password Store (Library)
-Copyright (C) 2010,2012,2013,2015  Walter Doekes <wdoekes>, OSSO B.V.
+Copyright (C) 2010,2012,2013,2015,2018  Walter Doekes <wdoekes>, OSSO B.V.
 
     This library is free software; you can redistribute it and/or modify it
     under the terms of the GNU Lesser General Public License as published by

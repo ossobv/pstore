@@ -4,8 +4,8 @@ pstore :: Python Protected Password Store
 The list of changes.
 
 
-2017-11-21: 1.2.1_dev
----------------------
+2018-02-22: 1.3
+---------------
  * Replace markdown docs with rst.
  * Fix so tests work with py3.
  * First warn when keys expire in less than 25 days.

@@ -93,7 +93,7 @@ testdjango:
 
 testlib:
 	@printf '\n** RUNNING LIB UNITTESTS **\n\n'
-	PYTHONPATH=`pwd` sh -c 'for x in pstorelib/*.py; do printf "\n$$x: "; python $$x; done'
+	PYTHONPATH=$$(pwd) sh -c 'for x in pstorelib/*.py; do printf "\n$$x: "; python $$x; done'
 	@echo
 
 testcopyright:
@@ -144,6 +144,6 @@ pstore-full: dist/pstore-full-latest.tar.gz
 
 dist/pstore-full-latest.tar.gz: dummy
 	# Add all files to a single archive (always)
-	tar zcf dist/pstore-full-latest.tar.gz --no-recursion `git ls-files`
+	tar zcf dist/pstore-full-latest.tar.gz --no-recursion $$(git ls-files)
 
 dummy:
