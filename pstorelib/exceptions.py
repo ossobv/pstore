@@ -63,7 +63,8 @@ class UserError(PStoreException):
 
 
 class NotAllowed(UserError):
-    description = 'lookup denied (no permission or not found)'
+    description = (
+        'lookup denied (no permission to view/overwrite, or not found)')
 
 
 class NotFound(UserError):

@@ -96,7 +96,7 @@ class PStoreInterface(object):
             sys.stderr.write('WARNING: one or more users already allowed\n')
 
         new_users = list(set(users).difference(set(revoke)).union(set(allow)))
-        self.alter_permissions(objectid, new_users)
+        self.alter_permissions(objectid, new_users, object=object)
 
     def get_objects(self, objectid_contains, allowed_only, verbose):
         return self.backend.get_objects(objectid_contains=objectid_contains,
@@ -138,15 +138,18 @@ class PStoreInterface(object):
     # REGULAR INTERFACE
     ###########################################################################
 
-    def alter_permissions(self, objectid, allowed_users):
+    def alter_permissions(self, objectid, allowed_users, object=None):
         # 1. Get user info for the new list of allowed users.
         # (may raise NotFound, NotAllowed, NoNonce)
         keys = self.backend.get_keys(allowed_users)
         assert len(keys) == len(allowed_users)
 
         # 2. Get all *encrypted* properties.
-        # FIXME: get_full_object ?
-        object = self.backend.get_object(objectid)
+        # No need to get the allowed_only=False (all the properties), because
+        # getting empty/blank encrypted properties for a disallowed user
+        # doesn't make it possible to alter permissions anyway. See check at
+        # "if not files".
+        object = object or self.backend.get_object(objectid)
         properties = {}
         for property, info in object['properties'].items():
             if info['enctype'] == 'none':
@@ -154,7 +157,6 @@ class PStoreInterface(object):
             properties[property] = self.propget(
                 objectid, property.encode('ascii'))
 
-        # 2a.
         # FIXME: there should be a way to denote that we are not updating the
         # properties for a particular user.
         # that would allow us to only send a new list of usernames when we only
@@ -173,7 +175,14 @@ class PStoreInterface(object):
                     property.encode('ascii'), user.encode('ascii'),
                     encryptedfp))
 
-        # 4. Upload the whole batch in a single go, along with the user
+        # 4. Check that we actually did something. All objects have at least
+        # one encrypted property. If there is none, then we're looking at a
+        # disallowed object.
+        if not files:
+            assert self.config['user'] not in keys.keys()
+            raise NotAllowed()
+
+        # 5. Upload the whole batch in a single go, along with the user
         # modifications.
         self.backend.propupd(objectid, files=files)
 

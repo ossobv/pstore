@@ -7,6 +7,7 @@ The list of changes.
 2017-11-21: 1.2.1_dev
 ---------------------
  * Replace markdown docs with rst.
+ * Fix so tests work with py3.
 
 2017-11-21: 1.2.1
 -----------------
