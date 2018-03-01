@@ -22,6 +22,7 @@ from datetime import datetime
 from random import getrandbits
 
 from django.contrib.auth.models import User
+from django.core.validators import RegexValidator
 from django.db import models
 from django.db.models.signals import pre_delete
 from django.utils.translation import ugettext_lazy as _
@@ -32,6 +33,10 @@ from pstorelib.exceptions import CryptError
 from pstore.db import Model, AsciiField, BlobField
 from pstore.notify import (notify_object_deletion, notify_publickey_change,
                            notify_user_deletion)
+
+ascii_validator = RegexValidator(
+    regex='^[\t\r\n\x20-\x7e]*$',
+    message=_('Only readable ASCII is allowed: \\x20..\\x7E TAB CR LF'))
 
 
 class PublicKey(Model):
@@ -56,7 +61,7 @@ class PublicKey(Model):
     """
     user = models.OneToOneField(User, related_name='publickey')
     key = models.TextField(
-        blank=False,
+        blank=False, validators=[ascii_validator],
         help_text=_('The user\'s public key; can be in ssh authorized_key '
                     'format (OLD) or in PGP PUBLIC KEY format (NEW).'))
     description = models.CharField(
@@ -329,7 +334,7 @@ class Nonce(models.Model):
 
 def on_object_delete(instance, **kwargs):
     notify_object_deletion(object=instance)
-pre_delete.connect(on_object_delete, sender=Object)
+pre_delete.connect(on_object_delete, sender=Object)  # noqa
 
 
 def on_user_delete(instance, **kwargs):
@@ -345,4 +350,4 @@ def on_user_delete(instance, **kwargs):
     objects = Object.objects.filter(pk__in=object_pks).order_by('identifier')
 
     notify_user_deletion(user=instance, publickey=publickey, objects=objects)
-pre_delete.connect(on_user_delete, sender=User)
+pre_delete.connect(on_user_delete, sender=User)  # noqa
