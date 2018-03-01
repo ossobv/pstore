@@ -236,7 +236,7 @@ class PStoreInterface(object):
                     encryptedfp))
         else:
             # The value is public.
-            files = [(property, '*', fp)]
+            files = [(property.encode('ascii'), b'*', fp)]
 
         # FIXME: rename "files" to "values" or something
         self.backend.propset(objectid, property, files=files, o_excl=o_excl)
