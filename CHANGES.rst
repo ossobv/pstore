@@ -4,6 +4,11 @@ pstore :: Python Protected Password Store
 The list of changes.
 
 
+2018-03-01: 1.3.1
+-----------------
+ * Fix -ps bug with py3.
+ * Check that public key does not have non-ascii characters.
+
 2018-02-22: 1.3
 ---------------
  * Replace markdown docs with rst.
