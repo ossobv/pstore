@@ -732,7 +732,7 @@ def print_result_related_properties(machine_info):
                 if b'\n' in data:
                     bytes_stdout.write(b'%s = \\\n | %s\n' % (
                         property.encode('ascii'),
-                        data.replace('b\n', b'\n | '),))
+                        data.replace(b'\n', b'\n | '),))
                 else:
                     bytes_stdout.write(b'%s = %s\n' % (
                         property.encode('ascii'),
