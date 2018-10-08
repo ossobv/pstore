@@ -4,6 +4,10 @@ pstore :: Python Protected Password Store
 The list of changes.
 
 
+2018-10-08: 1.3.3
+-----------------
+ * Fix yet another py3 unicode issue.
+
 2018-03-09: 1.3.2
 -----------------
  * Fix stupid typo in multiline property display.
