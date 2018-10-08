@@ -759,7 +759,7 @@ def print_result_search(properties, config):
                 assert info['enctype'] == 'none'
                 data = info['data'].decrypt_with(None).read()
                 if len(data) < 80:
-                    fmt_args.append(data)
+                    fmt_args.append(data.decode('utf-8', 'ascii'))
                 else:
                     fmt_args.append('(%d byte document)' % info['size'])
             elif info['enctype'] != 'none':

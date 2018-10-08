@@ -188,7 +188,7 @@ class Backend(object):
 
                 status_code = e.code
                 try:
-                    body = e.read()
+                    body = e.read().decode('utf-8', 'replace')
                 finally:
                     e.close()
                 if status_code == 403:
