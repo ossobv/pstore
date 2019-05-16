@@ -204,11 +204,11 @@ class CryptoWriter(object):
         if self.fp:
             input = self.fp
         else:
-            input = BytesIO(self.data)
+            input = gpg.Data(self.data)
         if self.use_tempfile:
             output = SpooledTemporaryFile(MAX_INMEMORY_SIZE)
         else:
-            output = BytesIO()
+            output = gpg.Data()
 
         gpgcrypt.encrypt(input=input, output=output, public_key_ref=gpgkey)
         return output

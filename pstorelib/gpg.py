@@ -27,16 +27,23 @@ from sys import stderr
 from time import time
 
 try:
-    from gpgme import ERR_CANCELED, Context, GpgmeError
-except ImportError as e:
-    raise ImportError(e.args[0] + '\n\n*HINT* apt-get install python-gpgme')
-
-try:
-    from gpgme import PINENTRY_MODE_LOOPBACK
+    from gpg import Context, Data
+    from gpg.gpgme import (
+        GPG_ERR_CANCELED as ERR_CANCELED,
+        GPGME_PINENTRY_MODE_LOOPBACK as PINENTRY_MODE_LOOPBACK)
 except ImportError:
-    PINENTRY_MODE_LOOPBACK = None
+    try:
+        from gpgme import ERR_CANCELED, Context, GpgmeError
+    except ImportError as e:
+        raise ImportError(
+            '{}\n\n*HINT* apt-get install python-gpg[me]'.format(e.args[0]))
+    try:
+        from gpgme import PINENTRY_MODE_LOOPBACK
+    except ImportError:
+        PINENTRY_MODE_LOOPBACK = None
 
-from pstorelib.bytes import BytesIO
+    from pstorelib.bytes import BytesIO as Data
+
 from pstorelib.exceptions import (CryptError, CryptBadPassword,
                                   CryptBadPubKey, CryptBadPrivKey)
 from pstorelib.gpgkey import get_pubkey_id_from_ascii
@@ -206,9 +213,8 @@ class GPGCrypt(object):
         return key
 
     def import_key(self, key):
-        to_import = BytesIO(key.encode('ascii'))  # ensure bytestring
-        res = self.context.import_(to_import)
-        if (res.imported + res.unchanged) != 1:
+        res = self.context.op_import(key.encode('ascii'))
+        if res is not None and (res.imported + res.unchanged) != 1:
             raise CryptError('import failed (imported=%d, unchanged=%d). '
                              'Try setting os.environ["GNUPGHOME"] to an '
                              '*existing* writable path in settings; '
@@ -260,7 +266,7 @@ class GPGCrypt(object):
         assert hasattr(input, 'read')
         assert hasattr(output, 'write')
 
-        self.context.encrypt([public_key_ref], 1, input, output)
+        self.context.op_encrypt([public_key_ref], 1, input, output)
 
         # length = output.tell()
         output.seek(0)
@@ -352,8 +358,8 @@ if __name__ == '__main__':
             for recipient in recipients:
                 key = g.get_key(id=recipient[0])
 
-                input = BytesIO(source)
-                output = BytesIO()
+                input = Data(source)
+                output = Data()
                 g.encrypt(input=input, output=output, public_key_ref=key)
                 encrypted = output.read()
 
@@ -361,8 +367,8 @@ if __name__ == '__main__':
                 self.assertTrue(len(encrypted) > len(source))
 
                 # Decrypt it
-                input = BytesIO(encrypted)
-                output = BytesIO()
+                input = Data(encrypted)
+                output = Data()
                 g.decrypt(input=input, output=output)
                 decrypted = output.read()
 
