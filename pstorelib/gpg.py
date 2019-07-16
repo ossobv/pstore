@@ -28,12 +28,16 @@ from time import time
 
 try:
     from gpg import Context, Data
+    from gpg.errors import GpgError
     from gpg.gpgme import (
         GPG_ERR_CANCELED as ERR_CANCELED,
         GPGME_PINENTRY_MODE_LOOPBACK as PINENTRY_MODE_LOOPBACK)
+
+    class OldGpgmeError(Exception):
+        pass
 except ImportError:
     try:
-        from gpgme import ERR_CANCELED, Context, GpgmeError
+        from gpgme import ERR_CANCELED, Context, GpgmeError as OldGpgmeError
     except ImportError as e:
         raise ImportError(
             '{}\n\n*HINT* apt-get install python-gpg[me]'.format(e.args[0]))
@@ -44,8 +48,9 @@ except ImportError:
 
     from pstorelib.bytes import BytesIO as Data
 
-from pstorelib.exceptions import (CryptError, CryptBadPassword,
-                                  CryptBadPubKey, CryptBadPrivKey)
+from pstorelib.bytes import sendfile
+from pstorelib.exceptions import (
+    CryptError, CryptBadPassword, CryptBadPubKey, CryptBadPrivKey)
 from pstorelib.gpgkey import get_pubkey_id_from_ascii
 
 unicode = type(u'')
@@ -238,11 +243,25 @@ class GPGCrypt(object):
         assert hasattr(input, 'read')
         assert hasattr(output, 'write')
 
+        # Too bad we have to load the data immediately, as the Data(file=...)
+        # only works if we also pass offset and length (and a real file)).
+        input = Data(input.read())
+        output_orig = output
+        output = Data()
+
         try:
-            self.context.decrypt(input, output)
-        except GpgmeError as e:
+            self.context.op_decrypt(input, output)
+        except GpgError as e:
             # If you press ^C during passphrase input.
-            #   gpgme.GpgmeError: (7, 58, u'No data')
+            #   GpgError: (7, 58, u'No data')
+            #   == (e.source, e.code, e.context)
+            if e.source == 7:
+                if e.code == 11:
+                    raise CryptBadPassword()
+                if e.code == 152:
+                    raise CryptBadPrivKey()
+            raise
+        except OldGpgmeError as e:
             # If the decryption failed (badly encrypted, secret key missing)
             #   gpgme.GpgmeError: (7, 152, u'Decryption failed')
             # If the password callback raised an error.
@@ -256,6 +275,8 @@ class GPGCrypt(object):
 
         # length = output.tell()
         output.seek(0)
+        sendfile(output_orig, output)
+        output_orig.seek(0)
 
     def encrypt(self, public_key_ref=None, input=None, output=None):
         """
