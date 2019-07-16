@@ -1,0 +1,24 @@
+#!/bin/sh
+identifier=pstore-audit
+here=$(dirname "$0")
+day=$(LC_ALL=C date +'%Y-%m-%d')
+temp=$(mktemp)
+tempcsv=$(mktemp)
+temphtml=$(mktemp)
+csvname="export.$day.csv"
+htmlname="export.$day.html"
+
+# Export and store in pstore.
+/srv/django-projects/pstore/manage export >"$tempcsv" &&
+    pstore $identifier -pe "$csvname" <"$tempcsv" 2>/dev/null &&
+    "$here/csv2html" --complete-document --delimiter ';' \
+        --title 'Pstore export' "$tempcsv" >"$temphtml" &&
+    pstore $identifier -pe "$htmlname" <"$temphtml" 2>/dev/null
+
+# Double-check values.
+pstore $identifier -pg "$csvname" >"$temp"
+cmp "$temp" "$tempcsv" || echo "csv mismatch" >&2
+pstore $identifier -pg "$htmlname" >"$temp"
+cmp "$temp" "$temphtml" || echo "html mismatch" >&2
+
+rm "$temp" "$tempcsv" "$temphtml"

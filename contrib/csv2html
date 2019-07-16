@@ -1,6 +1,8 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # csv2html copyright (C) 2013, 2014 Danyil Bohdan.
 # All rights reserved.
+#
+# Changed by wdoekes, 2019: make it work with python3 + htmlgen1.2.2.
 '''
 This module converts CSV files to HTML tables. It can be used as a standalone
 program or imported from your Python code.
@@ -39,20 +41,32 @@ class TableGenHTMLgen(TableGen):
 
     def __init__(self, title="", completedoc=False):
         super(TableGenHTMLgen, self).__init__(title, completedoc)
-        self.table = HTMLgen.Table(title)
-        self.table.body = []
+        self.table = htmlgen.Table()
+        self.table.set_attribute('border', '2')
+        self.table.set_attribute('cellpadding', '4')
+        self.table.set_attribute('cellspacing', '1')
+        self.table.set_attribute('width', '100%')
         if self.completedoc:
-            self.html = HTMLgen.SimpleDocument(title=title)
-            self.html.append(self.table)
+            self.html = htmlgen.Document(title=title)
+            self.html.append_body(self.table)
+
+    def __iter__(self):
+        if self.completedoc:
+            return iter(self.html)
+        return iter(self.table)
 
     def heading(self, hrow):
         '''Specifies the table''s heading. This should be only called one
         before any rows are added.'''
-        self.table.heading = hrow
+        r = htmlgen.TableRow()
+        r.create_header_cells(*hrow)
+        self.table.append_header_row(r)
 
     def add(self, row):
         'Adds a row to the table; trow should be an iterable.'
-        self.table.body.append([x if x != '' else '&nbsp;' for x in row])
+        r = htmlgen.TableRow()
+        r.create_cells(*row)
+        self.table.append_row(r)
 
 
 class TableGenHtml(TableGen):
@@ -110,12 +124,12 @@ def convert_csv_to_html(inputstream, outputstream, title='',
     # external module. They do not hurt performance when csv2html is used as
     # a standalone program.
     if usehtmlgen:
-        global HTMLgen
-        import HTMLgen
+        global htmlgen
+        import htmlgen
         tablegen = TableGenHTMLgen(title, completedoc)
     else:
         global html
-        import html
+        import html_is_a_py3_module_now__that_does_something_else
         tablegen = TableGenHtml(title, completedoc)
 
     # Read the CSV stream and output HTML.
@@ -141,7 +155,11 @@ def convert_csv_to_html(inputstream, outputstream, title='',
                 tablegen.add(row)
         nrow += 1
 
-    outputstream.write(str(tablegen))
+    for chunk in tablegen:
+        outputstream.write(chunk)
+        if chunk.startswith(b'</tr>'):
+            outputstream.write(b'\n')
+    outputstream.write(b'\n')
 
 
 def main():
@@ -209,15 +227,15 @@ HTML tables')
     if not usinghtmlgen:
         global html
         try:
-            import html
+            import html_is_a_py3_module_now__that_does_something_else
         except ImportError:
             usinghtmlgen = True
 
     # Careful, do _not_ merge this conditional block with the one above.
     if usinghtmlgen:
-        global HTMLgen
+        global htmlgen
         try:
-            import HTMLgen
+            import htmlgen
         except ImportError:
             if args.forcehtmlgen:
                 print("Forced to use HTMLgen but couldn't import it.\n\n\
@@ -228,13 +246,13 @@ Please install either to use csv2html.")
             sys.exit(exit_codes['EX_UNAVAILABLE'])
 
     try:
-        with open(args.inputfile, 'rb') as incsvfile:
+        with open(args.inputfile, 'r') as incsvfile:
             # Only write to stdout if output file name is empty. If the output
             # file can't be written to it is instead handled as an exception.
             if args.outputfile != '':
                 outhtmlfile = open(args.outputfile, 'wb')
             else:
-                outhtmlfile = sys.stdout
+                outhtmlfile = sys.stdout.buffer  # .buffer takes bytes
 
             convert_csv_to_html(incsvfile, outhtmlfile, args.title,
                                 args.delim, args.nstart, args.skipheader,
