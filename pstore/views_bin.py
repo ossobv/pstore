@@ -19,7 +19,8 @@ Copyright (C) 2012,2013,2015  Walter Doekes <wdoekes>, OSSO B.V.
     USA.
 """
 from datetime import datetime, timedelta
-from os import chmod, unlink
+from os import chmod, rename, unlink
+from os.path import basename
 
 from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied
@@ -85,12 +86,21 @@ def create_property(object, property, file, user):
                     connection.settings_dict['HOST'],)))
 
         # MySQLd must get read powers.
+        # @@secure_file_priv == '/var/lib/mysql-files/'
+        # That directory must be set to: mysql:www-data 0730.
         try:
             chmod(tempname, 0o604)
+            newname = '/var/lib/mysql-files/%s.%s.%s.%s' % (
+                object, property, user, basename(tempname))
+            # Hope it's on the same filesystem...
+            rename(tempname, newname)
         except Exception as e:
             raise HttpError(413, 'request too large (webserver permissions)', (
                 'For mysqld to do load LOAD_FILE() on %s, we need to alter '
                 'file permissions, we got: %s' % (tempname, e)))
+        else:
+            tempname = newname
+
         # Try to read the file.
         try:
             cursor = connection.cursor()
@@ -100,24 +110,22 @@ def create_property(object, property, file, user):
             ''', (tempname, prop.id))
         except Exception as e:
             # Tip #1:
-            #   /etc/apparmor.d/local/usr.sbin.mysqld:
-            #     /tmp/* r,
-            #
-            # Tip #2:
             #   mysql> UPDATE mysql.user SET file_priv = 'Y'
             #          WHERE user = 'pstore' AND host = 'localhost'
             #          AND file_priv = 'N'; FLUSH PRIVILEGES;
             #
-            # Tip #3:
+            # Tip #2:
             #   /etc/mysql/my.cnf:
             #     # If you're doing replication, you must use MIXED or
             #     # ROW based replication. Otherwise LOAD_FILE will fail.
             #     binlog_format = MIXED
             #
             raise HttpError(413, 'request too large (mysqld permissions)', (
-                'mysqld LOAD_FILE failed for %s, check apparmor. Check '
-                'File_Priv mysql permissions, check @@max_allowed_packet, '
-                'check @@secure_file_priv: %s' % (tempname, e)))
+                'mysqld LOAD_FILE failed for %s, when writing %s->%s (@%s). '
+                'Check apparmor/@@secure_file_priv, '
+                'check File_Priv mysql permissions, '
+                'check @@max_allowed_packet: %s ' % (
+                    tempname, object, property, user, e)))
         finally:
             # Remove access to the file asap.
             unlink(tempname)
