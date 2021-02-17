@@ -20,12 +20,13 @@ Copyright (C) 2012,2013,2015,2018  Walter Doekes <wdoekes>, OSSO B.V.
 """
 from __future__ import absolute_import
 
-from io import UnsupportedOperation
+from io import BytesIO, UnsupportedOperation
 from os import fdopen
 # TODO: make a SecureSpooledTemporaryFile that cleans up better after itself?
+import six
 from tempfile import SpooledTemporaryFile
 
-from pstorelib.bytes import BytesIO, can_seek, get_size, sendfile
+from pstorelib.bytes import can_seek, get_size, sendfile
 from pstorelib.exceptions import CryptBadPrivKey
 
 
@@ -202,7 +203,10 @@ class CryptoWriter(object):
         gpgkey = gpgcrypt.import_key(public_key)
 
         if self.fp:
-            input = self.fp
+            if six.PY2 and isinstance(self.fp, BytesIO):
+                input = gpg.Data(self.fp.read().encode('utf-8'))
+            else:
+                input = self.fp
         else:
             input = gpg.Data(self.data)
         if self.use_tempfile:

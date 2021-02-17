@@ -2,26 +2,22 @@
 
 # For installing the CLI interface only, using apt is probably best:
 #
-# apt-get install python-gpgme                  # enc=gpg
-# apt-get install python-crypto python-pyasn1   # enc=sshrsa (old)
+# apt-get install python3-gpg                     # enc=gpg
+# apt-get install python3-crypto python3-pyasn1   # enc=sshrsa (old)
 
 # For installing the server, you need the above, and this:
 #
-# apt-get install python-mysqldb
+# apt-get install python3-mysqldb
 
 # Uncomment items below if you're not using apt. See also the
 # --system-site-packages mkvirtualenv flag.)
 
-Django>=1.3,<1.5	# python-django (built with 1.4, 1.3 works)
-#MySQL-python>=1.2.4	# python-mysqldb (requires: python-dev libmysqlclient-dev)
-# 1.2.4 is needed for tests, older is fine for production,
-# or you could choose a different database backend...
+Django>=1.3,<1.5	# python3-django (built with 1.4, 1.3 works)
+#mysqlclient
 
 # for gpg key type:
-#gpg>=1.10		# python-gpg
-# (or.. old/obsolete)
-#pygpgme>=0.1		# python-gpgme (requires: python-dev libgpgme11-dev)
+gpg>=1.10		# python-gpg
 
 # for sshrsa key type:
-#pyasn1>=0.0.8a		# python-pyasn1
-#pycrypto>=2.0.1	# python-crypto
+pyasn1>=0.0.8a		# python3-pyasn1
+pycrypto>=2.0.1		# python3-crypto

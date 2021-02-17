@@ -18,16 +18,10 @@ Copyright (C) 2012,2013,2015,2018  Walter Doekes <wdoekes>, OSSO B.V.
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307,
     USA.
 """
-try:
-    from io import BytesIO
-except ImportError:
-    from StringIO import StringIO as BytesIO
 
+from io import BytesIO
 
-__all__ = ('BytesIO', 'sendfile')
-
-
-BytesIO  # touching it to make it look used
+__all__ = ('FileWithoutTrailingEnter', 'can_seek', 'get_size', 'sendfile')
 
 
 def can_seek(fp):
@@ -37,7 +31,7 @@ def can_seek(fp):
     """
     try:
         fp.seek(0, 1)  # SEEK_CUR, move 0 bytes forward/backward
-    except:  # AttributeError, IOError
+    except Exception:  # AttributeError, IOError
         return False
     return True
 

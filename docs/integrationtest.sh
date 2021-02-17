@@ -80,7 +80,7 @@ trap kill_children INT TERM EXIT
 # joe is the only one using sshrsa so he gets the ssh-rsa private key
 # setting.
 pstore="$rootdir/bin/pstore --store-url=$URL \
-        --private-key=$joefile"
+        --private-key=$joefile -uwalter"
 
 # Test "framework"
 begintest() {

@@ -22,6 +22,7 @@ Copyright (C) 2010,2012,2013,2015,2017  Walter Doekes <wdoekes>, OSSO B.V.
 from __future__ import absolute_import
 
 import errno
+from io import BytesIO
 import os
 import sys
 from getopt import GetoptError, gnu_getopt
@@ -29,7 +30,7 @@ from getpass import getpass, getuser
 from tempfile import mktemp
 
 from pstorelib import VERSION_STRING
-from pstorelib.bytes import BytesIO, FileWithoutTrailingEnter, sendfile
+from pstorelib.bytes import FileWithoutTrailingEnter, sendfile
 from pstorelib.crypt import PStoreCrypt, CryptoWriter
 from pstorelib.exceptions import (PStoreException, UserError, NotAllowed,
                                   NotFound)
@@ -189,7 +190,8 @@ class PStoreInterface(object):
     def propget(self, objectid, property):
         return self.backend.propget(objectid, property)
 
-    def propset(self, objectid, property, fp, allowed_users=None, o_excl=False):
+    def propset(
+            self, objectid, property, fp, allowed_users=None, o_excl=False):
         """The ``allowed_users`` argument can be one of three things:
         - ``None`` which means the property is public (unencrypted)
         - ``True`` which means: take the user list from the server. This won't
@@ -259,7 +261,7 @@ def parse_pstorerc():
     try:
         file = open(os.environ['HOME'] + '/.pstorerc', 'r')
         rc_args.extend(file.read().split())
-    except:
+    except Exception:
         pass
     finally:
         if file:
@@ -286,8 +288,8 @@ def parse_options(args):
         optlist, args = gnu_getopt(
             [args[0]] + rc_args + args[1:],  # inject defaults
             'hVcPp:' + 'ak:l:s:u:v',  # command options + configuration options
-            ('help', 'version', 'create', 'chpass', 'lookup-machine', 'propedit',
-             'consistency-check') +
+            ('help', 'version', 'create', 'chpass', 'lookup-machine',
+             'propedit', 'consistency-check') +
             ('all', 'private-key=', 'search=', 'store-url=', 'user=',
              'verbose')
         )
@@ -660,7 +662,7 @@ def silenced_sigpipe(callable, *args, **kwargs):
 
 
 def print_help(**kwargs):
-    print('''%(title)s
+    print(r'''%(title)s
                                                 --------------
 Usage:                                          | *        * |
   pstore machine                                |   \_  _/   | Python

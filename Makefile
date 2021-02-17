@@ -83,7 +83,7 @@ testint:
 	# Import all GPG example GPG keys
 	sh -c 'cat docs/examples/*.key | gpg --import; true'
 	# Remove Harm secret GPG key for testing purposes
-	python -c 'import gpgme;c=gpgme.Context();k=[i for i in c.keylist() if i.uids[0].email=="harm@example.com"][0];c.delete(k,1)'
+	python -c 'import gpg;c=gpg.Context();k=[i for i in c.keylist() if i.uids[0].email=="harm@example.com"][0];c.op_delete_ext(k,1)'
 	@echo
 	@./docs/integrationtest.sh
 

@@ -46,7 +46,7 @@ except ImportError:
     except ImportError:
         PINENTRY_MODE_LOOPBACK = None
 
-    from pstorelib.bytes import BytesIO as Data
+    from io import BytesIO as Data
 
 from pstorelib.bytes import sendfile
 from pstorelib.exceptions import (

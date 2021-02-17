@@ -19,6 +19,7 @@ Copyright (C) 2012,2013,2015  Walter Doekes <wdoekes>, OSSO B.V.
     USA.
 """
 from datetime import datetime, timedelta
+from io import BytesIO
 from os import chmod, rename, unlink
 from os.path import basename
 
@@ -30,7 +31,6 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.views.decorators.http import require_GET, require_POST
 
-from pstorelib.bytes import BytesIO
 from pstorelib.server import urlunquote
 
 from pstore.decorators import audit_view, nonce_required
