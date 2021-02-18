@@ -93,7 +93,7 @@ testdjango:
 
 testlib:
 	@printf '\n** RUNNING LIB UNITTESTS **\n\n'
-	PYTHONPATH=$$(pwd) sh -c 'for x in pstorelib/*.py; do printf "\n$$x: "; python $$x; done'
+	PYTHONPATH=$$(pwd) sh -c 'for x in pstorelib/*.py; do printf "\n$$x: "; python -m $$(echo $${x%.py} | tr -s '/' '.'); done'
 	@echo
 
 testcopyright:
