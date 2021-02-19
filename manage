@@ -1,7 +1,7 @@
 #!/bin/sh
 # vim: ts=8 sw=4 sts=4 noet ai:
+export DJANGO_SETTINGS_MODULE="${DJANGO_SETTINGS_MODULE:-pstore.settings}"
 projectpath="`(cd "\`dirname "$0"\`" >/dev/null; pwd; cd - >/dev/null)`"
-settings="pstore.settings"
 
 # Set python path according project path and optionally django path
 pythonpath="$projectpath"
@@ -15,50 +15,48 @@ export PYTHONWARNINGS="d"
 arg1="$1"; [ $# -gt 0 ] && shift; [ -z "$arg1" ] && arg1=help
 
 # Find a working django-admin app
-for tmp in django-admin.py django-admin; do
-    django_admin=`which "$tmp"` && break
-done
-[ -z "$django_admin" ] && echo "Missing django-admin(.py)! Using virtualenv and forgot to workon? requirements.txt not installed yet?" >&2 && exit 1
+django_admin=`which "django-admin"`
+[ -z "$django_admin" ] && echo "Missing django-admin! Using virtualenv and forgot to workon? requirements.txt not installed yet?" >&2 && exit 1
 django_admin="python -tt $django_admin"
 
 # Try regular ./manage extensions
 if [ "$arg1" = "dbdump" ]; then
-    shell="$django_admin shell --plain --settings=$settings" # plain instead of ipython
+    shell="$django_admin shell --plain" # plain instead of ipython
     setup='from django.conf import settings as s; g = lambda x: s.DATABASES["default"][x]' # django>=1.2
     engine="`echo $setup'; print "$$$%s" % g("ENGINE")' | $shell 2>/dev/null | sed -e '/\\$\\$\\$/!d;s/^.*\\$\\$\\$\\(.*\\)/\1/'`"
     case $engine in
     django.db.backends.mysql|mysql)
-	opts="`echo $setup'; print "$$$-u%s -p%s %s%s"%(g("USER"),g("PASSWORD"),("","-h%s "%g("HOST"))[g("HOST")!=""],g("NAME"))' \
-		| $shell 2>/dev/null | sed -e '/\\$\\$\\$/!d;s/^.*\\$\\$\\$//'`"
-	mysqldump $opts --skip-extended-insert "$@" | sed -e '{
-	    /^-- MySQL dump [0-9]\+/d
-	    /^-- \(Dump completed\|Host:\|Server version\)/d
-	    /^\/\*!40/d
-	    /^\/\*!50013/d
-	    /^SET \(@saved_cs\|character_set\)_client[[:blank:]]/d
-	    s/ AUTO_INCREMENT=[0-9]*//g
-	    s/ AUTO_INCREMENT/ auto_increment/
-	    s/ CHARACTER SET / character set /
-	    s/ COLLATE / collate /
-	    s/ DEFAULT\(.*\),/ default\1,/
-	    s/ PRIMARY KEY  (/ PRIMARY KEY (/
-	}'
-	;;
+        opts="`echo $setup'; print "$$$-u%s -p%s %s%s"%(g("USER"),g("PASSWORD"),("","-h%s "%g("HOST"))[g("HOST")!=""],g("NAME"))' \
+                | $shell 2>/dev/null | sed -e '/\\$\\$\\$/!d;s/^.*\\$\\$\\$//'`"
+        mysqldump $opts --skip-extended-insert "$@" | sed -e '{
+            /^-- MySQL dump [0-9]\+/d
+            /^-- \(Dump completed\|Host:\|Server version\)/d
+            /^\/\*!40/d
+            /^\/\*!50013/d
+            /^SET \(@saved_cs\|character_set\)_client[[:blank:]]/d
+            s/ AUTO_INCREMENT=[0-9]*//g
+            s/ AUTO_INCREMENT/ auto_increment/
+            s/ CHARACTER SET / character set /
+            s/ COLLATE / collate /
+            s/ DEFAULT\(.*\),/ default\1,/
+            s/ PRIMARY KEY  (/ PRIMARY KEY (/
+        }'
+        ;;
     postgresql_psycopg2)
-	opts="`echo $setup'; print "$$$user=%s password=%s dbname=%s%s"%(g("USER"),g("PASSWORD"),g("NAME"),(""," host=%s"%g("HOST"))[g("HOST")!=""])' \
-		| $shell 2>/dev/null | sed -e '/\\$\\$\\$/!d;s/^.*\\$\\$\\$//'`"
-	if [ "$*" = "--help" ]; then pg_dump --help
-	else pg_dump "$opts" "$@"; fi
-	;;
+        opts="`echo $setup'; print "$$$user=%s password=%s dbname=%s%s"%(g("USER"),g("PASSWORD"),g("NAME"),(""," host=%s"%g("HOST"))[g("HOST")!=""])' \
+                | $shell 2>/dev/null | sed -e '/\\$\\$\\$/!d;s/^.*\\$\\$\\$//'`"
+        if [ "$*" = "--help" ]; then pg_dump --help
+        else pg_dump "$opts" "$@"; fi
+        ;;
     esac
 elif [ "$arg1" = "flushall" ]; then
     printf 'Flushing all data to example setup! Continue [y/n]? '
     read x; [ "$x" = y ] || exit 1
-    $django_admin syncdb --noinput --settings="$settings" &&
-	    yes "`printf 'yes\nno'`" | $django_admin flush --settings="$settings" &&
-	    $django_admin loaddata example_data --settings="$settings"
-	    echo 'Imported example_data!'
+    $django_admin migrate --noinput &&
+            yes "`printf 'yes\nno'`" | $django_admin flush &&
+            $django_admin loaddata example_data
+            echo 'Imported example_data!'
 # Run the regular commands
 else
-    $django_admin "$arg1" --settings="$settings" "$@"
+    $django_admin "$arg1" "$@"
 fi

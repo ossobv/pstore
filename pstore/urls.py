@@ -20,19 +20,14 @@ Copyright (C) 2012,2013,2015  Walter Doekes <wdoekes>, OSSO B.V.
 """
 from django.contrib import admin
 from django.views.generic.base import RedirectView
+from django.urls import re_path
 
-try:
-    # Django 1.4+
-    from django.conf.urls import include, patterns
-except ImportError:
-    # Django 1.3-
-    from django.conf.urls.defaults import include, patterns
-
+from pstore import views_bin, views_js
 
 admin.autodiscover()
 
 
-urlpatterns = patterns('pstore',  # noqa
+urlpatterns = [
     # Object identifiers and property names may need to be escaped to allow for
     # the slash (/).
 
@@ -41,44 +36,46 @@ urlpatterns = patterns('pstore',  # noqa
     ###########################################################################
 
     # Get verbose info about a single object.
-    (r'^object/(?P<object_identifier>[^/]+).js$',
-     'views_js.get_object'),
+    re_path(r'^object/(?P<object_identifier>[^/]+).js$',
+            views_js.get_object),
     # Get a (partial) listing of objects.
-    (r'^objects.js$',
-     'views_js.list_objects'),
+    re_path(r'^objects.js$',
+            views_js.list_objects),
     # Get a (partial) listing of users.
-    (r'^users.js$',
-     'views_js.list_users'),
+    re_path(r'^users.js$',
+            views_js.list_users),
 
     # Get DB consistency report.
-    (r'^validate.js$',
-     'views_js.validate'),
+    re_path(r'^validate.js$',
+            views_js.validate),
 
     ###########################################################################
     # Binary interface, for properties (which can be large)
     ###########################################################################
 
     # Get a new nonce.
-    (r'^nonce.bin$',
-     'views_bin.create_nonce'),
+    re_path(r'^nonce.bin$',
+            views_bin.create_nonce),
 
     # Get a single object property.
-    (r'^propget/(?P<object_identifier>[^/]+)/(?P<property_name>[^/]+).bin$',
-     'views_bin.get_property'),
+    re_path(
+        r'^propget/(?P<object_identifier>[^/]+)/(?P<property_name>[^/]+).bin$',
+        views_bin.get_property),
     # Create object and/or set property.
-    (r'^propset/(?P<object_identifier>[^/]+)/(?P<property_name>[^/]+).bin$',
-     'views_bin.set_property'),
+    re_path(
+        r'^propset/(?P<object_identifier>[^/]+)/(?P<property_name>[^/]+).bin$',
+        views_bin.set_property),
 
     # Update all shared (encrypted) properties at once. Used when
     # adding/revoking user permissions. (TODO: create a separate one, usable
     # for revoking only? OR: allow update to specify the "bogus" file so that
     # it keeps the original for that user.)
-    (r'^propupd/(?P<object_identifier>[^/]+).bin$',
-     'views_bin.update_properties'),
+    re_path(r'^propupd/(?P<object_identifier>[^/]+).bin$',
+            views_bin.update_properties),
 
     # Search for properties.
-    (r'^propsearch.js$',
-     'views_js.search_properties'),
+    re_path(r'^propsearch.js$',
+            views_js.search_properties),
 
     ###########################################################################
     # Admin interface
@@ -86,6 +83,6 @@ urlpatterns = patterns('pstore',  # noqa
 
     # Use / as the admin path (only if this is the only app in the project)
     # (point people to the right url.. fails to work if STATIC_URL is '/')
-    (r'^admin(/.*)$', RedirectView.as_view(url='/', permanent=False)),
-    (r'', include(admin.site.urls)),
-)
+    re_path(r'^admin(/.*)$', RedirectView.as_view(url='/', permanent=False)),
+    re_path(r'', admin.site.urls),
+]

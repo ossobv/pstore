@@ -18,6 +18,7 @@ Copyright (C) 2012,2013,2015,2018  Walter Doekes <wdoekes>, OSSO B.V.
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307,
     USA.
 """
+from django.core.exceptions import ValidationError
 from django.test import TestCase
 
 # The Property has a "name" property which is an AsciiField and a "value"
@@ -25,29 +26,15 @@ from django.test import TestCase
 from pstore.models import Object, Property
 
 
-class AsciiTest(TestCase):
+class FieldTest(TestCase):
 
     def test_create(self):
         obj = Object.objects.create(identifier='test-server')
-        prop = Property.objects.create(object=obj, name=u'unicode-\u20ac')
-
-        # Lookup by id and check name validity (downcast to ascii)
-        prop2 = Property.objects.get(id=prop.id)
-        self.assertEqual(prop2.name, 'unicode-?')
-
-    def test_lookup(self):
-        obj = Object.objects.create(identifier='test-server')
-        prop = Property.objects.create(object=obj, name=u'unicode-?')
-
-        # Lookup by name (should be downcast to ascii)
-        prop2 = Property.objects.get(name=u'unicode-\u20ac')
-        self.assertEqual(prop2.id, prop.id)
-
-
-class BlobTest(TestCase):
+        with self.assertRaises(ValidationError):
+            Property.objects.create(object=obj, name='unicode-\u20ac')
 
     def test_binary(self):
-        binary = '\x00\x01\x02...abc...\xfd\xfe\xff'
+        binary = b'\x00\x01\x02...abc...\xfd\xfe\xff'
 
         obj = Object.objects.create(identifier='test-server')
         prop = Property.objects.create(object=obj, name='binary', value=binary)
@@ -56,12 +43,12 @@ class BlobTest(TestCase):
 
         # Lookup and compare
         prop2 = Property.objects.get(id=prop_id)
-        self.assertEqual(prop2.value, binary)
-        self.assertTrue(isinstance(prop2.value, str))  # non-unicode
+        self.assertTrue(isinstance(prop2.value, (bytes, memoryview)))
+        self.assertEqual(bytes(prop2.value), binary)
 
     def test_lowascii(self):
         # Test control characters and check that no one does CRLF replacing.
-        binary = ''.join([chr(i) for i in range(0, 32)]) + '\r\n\r\n'
+        binary = bytearray(range(0, 32)) + b'\r\n\r\n'
 
         obj = Object.objects.create(identifier='test-server')
         prop = Property.objects.create(object=obj, name='lowascii',
@@ -71,13 +58,13 @@ class BlobTest(TestCase):
 
         # Lookup and compare
         prop2 = Property.objects.get(id=prop_id)
-        self.assertEqual(prop2.value, binary)
-        self.assertTrue(isinstance(prop2.value, str))  # non-unicode
+        self.assertTrue(isinstance(prop2.value, (bytes, memoryview)))
+        self.assertEqual(bytes(prop2.value), binary)
 
     def test_long(self):
-        data512 = (('A' * 127 + '\n') + ('B' * 127 + '\n') +
-                   ('C' * 127 + '\n') + ('C' * 127 + '\n'))
-        data = (4096 * (2 * data512)) + '..tail'  # 4MB and a little
+        data512 = ((b'A' * 127 + b'\n') + (b'B' * 127 + b'\n')
+                   + (b'C' * 127 + b'\n') + (b'C' * 127 + b'\n'))
+        data = (4096 * (2 * data512)) + b'..tail'  # 4MB and a little
         self.assertEqual(len(data), 4096 * 1024 + 6)
 
         obj = Object.objects.create(identifier='test-server')
@@ -87,5 +74,5 @@ class BlobTest(TestCase):
 
         # Lookup and compare
         prop2 = Property.objects.get(id=prop_id)
-        self.assertEqual(prop2.value, data)
-        self.assertTrue(isinstance(prop2.value, str))  # non-unicode
+        self.assertTrue(isinstance(prop2.value, (bytes, memoryview)))
+        self.assertEqual(bytes(prop2.value), data)

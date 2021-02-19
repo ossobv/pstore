@@ -28,19 +28,7 @@ from django.db.models import Count
 from pstore.models import Object, ObjectPerm, Property
 
 # Numeric types
-try:
-    long
-except NameError:
-    NUMERIC_TYPES = (float, int, Decimal)
-else:
-    NUMERIC_TYPES = (float, int, long, Decimal)
-# Unicode type
-try:
-    unicode
-except NameError:
-    unistr = str
-else:
-    unistr = unicode
+NUMERIC_TYPES = (float, int, Decimal)
 
 
 class Command(BaseCommand):
@@ -72,25 +60,25 @@ class Command(BaseCommand):
             self.stdout.write(self.get_row(obj))
 
     def to_row(self, iterable):
-        return u';'.join(iterable) + '\n'
+        return ';'.join(iterable) + '\n'
 
     def to_column(self, value):
         if isinstance(value, NUMERIC_TYPES):
-            return unistr(value)
-        elif value == u'':
-            return u''
+            return str(value)
+        elif value == '':
+            return ''
         else:
-            return u'"' + unistr(value).replace(u'"', u'""') + u'"'
+            return '"' + str(value).replace('"', '""') + '"'
 
     def get_head_row(self):
         return self.to_row(self.get_headers())
 
     def get_row(self, obj):
         return self.to_row(
-            self.get_columns_for_object(obj) +
-            tuple((u'', u'x')[i]
-                  for i in self.get_columns_for_usernames(obj)) +
-            self.get_columns_for_properties(obj))
+            self.get_columns_for_object(obj)
+            + tuple(('', 'x')[i]
+                    for i in self.get_columns_for_usernames(obj))
+            + self.get_columns_for_properties(obj))
 
     def get_columns_for_object(self, obj):
         return (self.to_column(obj.pk), self.to_column(obj.identifier))
@@ -117,19 +105,19 @@ class Command(BaseCommand):
             .filter(type=Property.TYPE_SHARED)
             .values_list('name', flat=True).distinct())
         shared_properties = dict(
-            (i, u'<enc>') for i in shared_properties)
+            (i, '<enc>') for i in shared_properties)
 
         properties = pub_properties
         properties.update(shared_properties)
 
-        return tuple(self.to_column(properties.get(i, u'')) for i in names)
+        return tuple(self.to_column(properties.get(i, '')) for i in names)
 
     def get_headers(self):
         if not hasattr(self, '_get_headers'):
             self._get_headers = (
-                (u'oid', u'object',) +
-                tuple(u'U:' + i for i in self.get_usernames()) +
-                tuple(u'P:' + i for i in self.get_property_names()))
+                ('oid', 'object',)
+                + tuple('U:' + i for i in self.get_usernames())
+                + tuple('P:' + i for i in self.get_property_names()))
         return self._get_headers
 
     def get_usernames(self):

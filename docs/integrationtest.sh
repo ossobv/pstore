@@ -1,7 +1,7 @@
 #!/bin/bash
 # vim: set ts=8 sw=4 sts=4 et ai tw=71:
-FAILFAST=   # set to non-empty to exit immediately
-SKIPLARGE=1 # set to non-empty to skip largefile tests
+FAILFAST="${FAILFAST}"   # set to non-empty to exit immediately
+SKIPLARGE="${SKIPLARGE:-1}" # set to non-empty to skip largefile tests
 
 # If you want to run the server yourself, specify the store-url on the
 # command line.
@@ -15,15 +15,6 @@ fi
 self="$0"
 [ "${self:0:1}" != '/' ] && self="`pwd`/$self"
 rootdir="`dirname "$self"`/.."
-
-# Mangle the root dir by replacing /home/USER with ~ if applicable.
-# This tests that the ssh key file argument understands the tilde.
-if echo "$HOME" | grep -q '^[^#]\+$'; then
-    joefile="`echo $rootdir |
-             sed -e "s#^$HOME#~#"`/docs/examples/joe_at_example_com"
-else
-    joefile="$rootdir/docs/examples/joe_at_example_com"
-fi
 
 # Check for unused ports (not really multiuser safe, but will work in
 # most cases.
@@ -77,10 +68,8 @@ fi
 # Ensure that daemon children get killed when we end, and make sure we end.
 trap kill_children INT TERM EXIT
 
-# joe is the only one using sshrsa so he gets the ssh-rsa private key
-# setting.
-pstore="$rootdir/bin/pstore --store-url=$URL \
-        --private-key=$joefile -uwalter"
+# Default invocation with walter as the user.
+pstore="python -m pstorelib.main --store-url=$URL -uwalter"
 
 # Test "framework"
 begintest() {
@@ -129,7 +118,7 @@ fails=0
 
 begintest 'Basic run test with failover' ------------------------------
 #
-call="$rootdir/bin/pstore --store-url=http://does-not-exist \
+call="python -m pstorelib.main --store-url=http://does-not-exist \
       --store-url=$URL -ualex"
 if ! $call >/dev/null; then
     failtest 'expected success on 2nd host'
@@ -137,11 +126,10 @@ else
     endtest
 fi
 
-
 begintest 'Testing failed store url' ----------------------------------
 #
 # (not using $pstore because of the store-url)
-call="$rootdir/bin/pstore --store-url=http://does-not-exist \
+call="python -m pstorelib.main --store-url=http://does-not-exist \
       --store-url=http://does-not-either"
 if test "`$call 2>&1 | sed -e 's/^.* \([^ ]*\)$/\1/'`" != \
         'http://does-not-exist'; then
@@ -543,7 +531,7 @@ fi
 #######################################################################
 
 
-begintest 'Large file support (setup, dropping sshrsa)' ---------------
+begintest 'Large file support (setup, dropping joe)' ---------------
 #
 call="$pstore test.example.com -uwalter ^joe"
 if ! $call; then

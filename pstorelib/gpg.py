@@ -18,42 +18,22 @@ Copyright (C) 2012,2013,2015-2016,2018  Walter Doekes <wdoekes>, OSSO B.V.
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307,
     USA.
 """
-from __future__ import absolute_import
-
 import os
 import re
 from getpass import getpass
 from sys import stderr
 from time import time
 
-try:
-    from gpg import Context, Data
-    from gpg.errors import GpgError
-    from gpg.gpgme import (
-        GPG_ERR_CANCELED as ERR_CANCELED,
-        GPGME_PINENTRY_MODE_LOOPBACK as PINENTRY_MODE_LOOPBACK)
-
-    class OldGpgmeError(Exception):
-        pass
-except ImportError:
-    try:
-        from gpgme import ERR_CANCELED, Context, GpgmeError as OldGpgmeError
-    except ImportError as e:
-        raise ImportError(
-            '{}\n\n*HINT* apt-get install python-gpg[me]'.format(e.args[0]))
-    try:
-        from gpgme import PINENTRY_MODE_LOOPBACK
-    except ImportError:
-        PINENTRY_MODE_LOOPBACK = None
-
-    from io import BytesIO as Data
+from gpg import Context, Data
+from gpg.errors import GpgError
+from gpg.gpgme import (
+    GPG_ERR_CANCELED as ERR_CANCELED,
+    GPGME_PINENTRY_MODE_LOOPBACK as PINENTRY_MODE_LOOPBACK)
 
 from pstorelib.bytes import sendfile
 from pstorelib.exceptions import (
     CryptError, CryptBadPassword, CryptBadPubKey, CryptBadPrivKey)
 from pstorelib.gpgkey import get_pubkey_id_from_ascii
-
-unicode = type(u'')
 
 
 # A few notes about subkeys:
@@ -162,8 +142,8 @@ class GPGCrypt(object):
 
         TODO: if the key is not found, get it from server?
         """
-        if (len(kwargs) != 1 or
-                any(i not in ('id', 'email') for i in kwargs.keys())):
+        if (len(kwargs) != 1
+                or any(i not in ('id', 'email') for i in kwargs.keys())):
             raise TypeError('get_key takes either id= or email=')
 
         # Lookup by id.
@@ -202,8 +182,8 @@ class GPGCrypt(object):
 
         # Find right subkey and check if expiry is nigh.
         for subkey in key.subkeys:
-            if not (subkey.expired or subkey.invalid or subkey.revoked or
-                    subkey.disabled or not subkey.can_encrypt):
+            if not (subkey.expired or subkey.invalid or subkey.revoked
+                    or subkey.disabled or not subkey.can_encrypt):
                 break
         if subkey.expires and float(subkey.expires - time()) / 86400.0 < 25:
             # Send out a warning that this key is about to expires. I'm not
@@ -259,17 +239,6 @@ class GPGCrypt(object):
                 if e.code == 11:
                     raise CryptBadPassword()
                 if e.code == 152:
-                    raise CryptBadPrivKey()
-            raise
-        except OldGpgmeError as e:
-            # If the decryption failed (badly encrypted, secret key missing)
-            #   gpgme.GpgmeError: (7, 152, u'Decryption failed')
-            # If the password callback raised an error.
-            #   gpgme.GpgmeError: (7, 32779, u'Bad file descriptor')
-            if e.args[0] == 7:
-                if e.args[1] == 11:
-                    raise CryptBadPassword()
-                if e.args[1] == 152:
                     raise CryptBadPrivKey()
             raise
 
@@ -348,53 +317,3 @@ class GPGCrypt(object):
         # quicker abort: 'Bad file descriptor'
         os.close(fd)
         return ERR_CANCELED
-
-
-if __name__ == '__main__':
-    import unittest
-
-    class Test(unittest.TestCase):
-        KEY_ALEX = ('ECCF8511CA3F91BBD9BD09FEC797D1A5DD9DB7EB',
-                    'alex@example.com')
-        KEY_WALTER = ('ED3DB90502DE8DB34510544E66E99FD00350A01C',
-                      'walter@example.com')
-
-        def password_callback(self, id_name_comment_email, key_ids,
-                              prev_was_bad):
-            first_name = id_name_comment_email.rsplit('<', 1)[1]
-            first_name = first_name.split('@', 1)[0]
-            return (first_name + '2', False)  # (password, allow_caching)
-
-        def test_1(self):
-            g = GPGCrypt()
-            g.set_password_cb(self.password_callback)
-
-            source = b'sEcReT!'
-
-            # FIXME/TODO: charge the GPGCrypt with the respective pgp public
-            # and private keys before attempting any of this..
-
-            recipients = (self.KEY_ALEX, self.KEY_WALTER)
-
-            for recipient in recipients:
-                key = g.get_key(id=recipient[0])
-
-                input = Data(source)
-                output = Data()
-                g.encrypt(input=input, output=output, public_key_ref=key)
-                encrypted = output.read()
-
-                # Valid assumption when input is small.
-                self.assertTrue(len(encrypted) > len(source))
-
-                # Decrypt it
-                input = Data(encrypted)
-                output = Data()
-                g.decrypt(input=input, output=output)
-                decrypted = output.read()
-
-                self.assertEqual(decrypted, source)
-
-        # FIXME: cover more with the unit tests
-
-    unittest.main()

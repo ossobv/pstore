@@ -25,12 +25,12 @@ from django.contrib.auth.models import User
 from django.core.validators import RegexValidator
 from django.db import models
 from django.db.models.signals import pre_delete
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 
 from pstorelib.crypt import encrypts
 from pstorelib.exceptions import CryptError
 
-from pstore.db import Model, AsciiField, BlobField
+from pstore.db import Model, ValidationMixin
 from pstore.notify import (notify_object_deletion, notify_publickey_change,
                            notify_user_deletion)
 
@@ -53,21 +53,17 @@ class PublicKey(Model):
         mI0EULkrQAEEAKU++49M+QfiSTFJjWQ8Yyr+OKa0V90aNGbYNaGvfzlPVHNS+AwR
         ...
 
-    or the obsolete ssh public key:
-
-        ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAIEA0IcrNyQLdVyCgpQtMfv/...
-
     Encrypted Property objects are encrypted using this public key.
     """
-    user = models.OneToOneField(User, related_name='publickey')
+    user = models.OneToOneField(
+        User, related_name='publickey', on_delete=models.CASCADE)
     key = models.TextField(
         blank=False, validators=[ascii_validator],
-        help_text=_('The user\'s public key; can be in ssh authorized_key '
-                    'format (OLD) or in PGP PUBLIC KEY format (NEW).'))
+        help_text=_('The user\'s public key; in PGP PUBLIC KEY format.'))
     description = models.CharField(
         max_length=255, blank=True,
         help_text=_('Human readable info about the key, e.g. the PGP key '
-                    'uid (Alex Boonstra (TEST) <alex@example.com>).'))
+                    'uid (Alex B <alex@example.com>).'))
 
     def __init__(self, *args, **kwargs):
         super(PublicKey, self).__init__(*args, **kwargs)
@@ -93,9 +89,7 @@ class PublicKey(Model):
         return changes
 
     def key_type(self):
-        if self.key.startswith('ssh-rsa '):
-            return 'sshrsa'
-        elif self.key.startswith('----'):
+        if self.key.startswith('----'):
             return 'gpg'
         return 'unknown'
 
@@ -111,8 +105,8 @@ class PublicKey(Model):
 
         return ret
 
-    def __unicode__(self):
-        return _(u"%(user)s's %(key_type)s public key") % {
+    def __str__(self):
+        return _("%(user)s's %(key_type)s public key") % {
             'user': self.user, 'key_type': self.key_type()
         }
 
@@ -154,7 +148,8 @@ class Object(Model):
     the "password" for automatic ssh login. The Object itself does not assign
     any meaning to it though.
     """
-    identifier = AsciiField(max_length=255, unique=True)
+    identifier = models.CharField(
+        max_length=255, unique=True, validators=[ascii_validator])
 
     class Meta:
         permissions = (
@@ -162,26 +157,27 @@ class Object(Model):
             ('view_any_object', _('View any object')),
         )
 
-    def __unicode__(self):
+    def __str__(self):
         return self.identifier
 
 
-class ObjectPerm(models.Model):
+class ObjectPerm(ValidationMixin, models.Model):
     """
     Who has read and write permissions for an Object.
     """
-    object = models.ForeignKey(Object, related_name='allowed')
-    user = models.ForeignKey(User)
+    object = models.ForeignKey(
+        Object, related_name='allowed', on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     can_write = models.BooleanField()
 
-    def __unicode__(self):
+    def __str__(self):
         dict = {'user': self.user, 'object': self.object}
         if self.can_write:
             return _('%(user)s can write %(object)s') % dict
         return _('%(user)s can read %(object)s') % dict
 
 
-class Property(models.Model):
+class Property(ValidationMixin, models.Model):
     """
     An Object can hold one or more properties. For public properties, there
     is only one record. For private/shared (encrypted) properties, there is one
@@ -207,18 +203,21 @@ class Property(models.Model):
     )
 
     created = models.DateTimeField(auto_now_add=True)
-    object = models.ForeignKey(Object, related_name='properties')
-    name = AsciiField(
+    object = models.ForeignKey(
+        Object, related_name='properties', on_delete=models.CASCADE)
+    name = models.CharField(
         max_length=255,
-        help_text=_('The property identifier/name.'))
+        help_text=_('The property identifier/name.'),
+        validators=[ascii_validator])
     type = models.PositiveSmallIntegerField(
         choices=TYPE_CHOICES,
         default=TYPE_PUBLIC, help_text=_('Property properties ;-)'))
 
     # Make sure you defer('value') unless you need it!
-    value = BlobField(blank=True)
+    value = models.BinaryField(blank=True)
 
-    user = models.ForeignKey(User, blank=True, null=True, default=None)
+    user = models.ForeignKey(
+        User, blank=True, null=True, default=None, on_delete=models.CASCADE)
 
     class Meta:
         unique_together = ('object', 'name', 'user')
@@ -238,13 +237,13 @@ class Property(models.Model):
         assert self.user_id is None
         return 'none'
 
-    def __unicode__(self):
+    def __str__(self):
         return _('%(object)s -> %(name)s (%(user)s)') % {
             'object': self.object, 'name': self.name, 'user': self.user
         }
 
 
-class Nonce(models.Model):
+class Nonce(ValidationMixin, models.Model):
     """
     To authenticate users, we use encrypted nonces. We generate a random value,
     encrypt the data using the user's public key and hand out that nonce.
@@ -266,9 +265,9 @@ class Nonce(models.Model):
     MAX_LENGTH = 32     # exactly 32
 
     created = models.DateTimeField(auto_now_add=True)  # expiry depends on this
-    user = models.ForeignKey(User)
-    value = BlobField()
-    encrypted = BlobField()
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    value = models.BinaryField()
+    encrypted = models.BinaryField()
 
     @classmethod
     def is_sane(cls, value):
@@ -276,7 +275,7 @@ class Nonce(models.Model):
 
     @classmethod
     def is_sane_b64(cls, value):
-        if not isinstance(value, basestring):
+        if not isinstance(value, (bytes, bytearray)):
             return False
         b64_min_length = int(cls.MIN_LENGTH * 4.0 / 3)
         b64_max_length = int((cls.MAX_LENGTH + 3.0) * 4 / 3)
@@ -299,12 +298,12 @@ class Nonce(models.Model):
 
         # Long-to-bytes in a little endian fashion.
         while random:
-            value.append('%c' % (random & 0xff),)
+            value.append(b'%c' % (random & 0xff),)
             random >>= 8
         while len(value) < bytes:
             value.append('\0')  # most significant bytes 0?
 
-        self.value = ''.join(value)
+        self.value = b''.join(value)
         assert self.is_sane(self.value)
 
     def encrypt(self):

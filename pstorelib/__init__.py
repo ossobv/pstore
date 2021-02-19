@@ -19,11 +19,10 @@ Copyright (C) 2012,2013,2015,2017,2018  Walter Doekes <wdoekes>, OSSO B.V.
     USA.
 """
 
-# We only need to expose these. The gpg and sshrsa cryptography modules are
-# imported by crypt.
+# The gpg cryptography module is not part of the public api.
 __all__ = ('VERSION', 'VERSION_STRING', 'bytes', 'crypt', 'exceptions',
            'server')
 # http://docs.python.org/2/tutorial/modules.html#importing-from-a-package
 
-VERSION = (1, 3, 3)
-VERSION_STRING = '1.3.3'
+VERSION = (2, 0, 0)
+VERSION_STRING = '2.0.0.dev1'

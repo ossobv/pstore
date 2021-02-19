@@ -166,15 +166,59 @@ AK968N1Yrw+ytDuus3s7xPXYAw==
         <field type="DateTimeField" name="created">2012-12-13T11:28:43</field>
         <field type="DateTimeField" name="modified">2012-12-13T11:28:43</field>
         <field to="auth.user" name="user" rel="OneToOneRel">4</field>
-        <field type="TextField" name="key">ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAAAgQDOMBVBteGqm8VFRiPNClGy8RLYf7etIg++qA6Xo7pThorzHU0LvXK0SDeUbTSgPUAfql8pD4hATF89HzOUs5n6YHPvAu2MMXWGfaF5DMb+5f5JbfQLhIohfllmlwWigHinteV6uhP7xNF/4MhEJgvGwa1AP5wESR+QHtefaZDsZQ== joe@example.com</field>
-        <field type="CharField" name="description">joe's public ssh key</field>
+        <field type="TextField" name="key">-----BEGIN PGP PUBLIC KEY BLOCK-----
+
+mI0EYC6O5wEEAM00O+Hr3kbDdNFXMx8J8VhvE0fB9Lobr5mlaEJBWYv4VmmBLBcv
+COPkHwynPTFY0SyQAl4IhUORbRXUh2GPv2jhfik/8NN06w+1eI9H39c/rhH+JS9E
+fRwEhxZxvQrE/7r51UHjz6J9wC8Lqn7eyet8QHkindOeorGz9Whju9V7ABEBAAG0
+HkpvZSBKIChURVNUKSA8am9lQGV4YW1wbGUuY29tPojOBBMBCgA4FiEEbidUiHem
+Ob2DP6SH1CfsUaf5OgYFAmAujucCGy8FCwkIBwIGFQoJCAsCBBYCAwECHgECF4AA
+CgkQ1CfsUaf5OgZ3gAP8Dd6Y5qVWqcENxxyaGrlzBwfbpjMxf+0x/GoMoqEUzyQo
+Ax5UkT8sH94HchSEjQUYxy8uPjweJFl6oYe/BDeltdSN8ws+019U0yKHPW8g4Eks
+8hV+6feDLFRgILcltOXmX0QQah2vr6ZFNk+qWhmPBiDPHkii8UtoSkuL/ILWiai4
+jQRgLo7nAQQAvN57jCz/7Nujo4Yy5R37sYbEaxKCA1C3L8ONOMFRbQ4T6jqO0Qb2
+GHwB6qGEKhDUFTZUMmy5lQvPa7HWI66wwVdH8wZzTquzJewUVQLMoCgVNfXHVTik
+Z24Z7FBdidcYMF78+dgCipp1ekg5djmvVu3/MysBZVNZtVE1zuElzhEAEQEAAYkB
+awQYAQoAIBYhBG4nVIh3pjm9gz+kh9Qn7FGn+ToGBQJgLo7nAhsuAL8JENQn7FGn
++ToGtCAEGQEKAB0WIQRwOjAfQcsXgW1ZksfZFCU/0KWixAUCYC6O5wAKCRDZFCU/
+0KWixM8sA/9kqLbZWF7qmgD6+0qlINLzMvNDcgxU3AUyuMkaUxJt+mwLBWySE+GI
+/bihfmQReaE1sJw9QZmrWuz5tV/810xgOZMe/eHLMVd+fLoaZGOLJ4Q+7TYOSCy/
+cEnE3UVyz6+4wys0DDnbXxX6NwF3WdYjPCy1oKGLAH0StXufKY+xtEpUBADKHZUT
+WFbXi/2uX7z8KKVQtiJORCF5F92wvFcSapV3YWW4c6ux9ArcYzxE1OH1QAIaP9lr
+aSJ9mYOY3mTfgU/mwfANQXwN4hRItaFERqTywSqzvHIhXwNHxvH5N9HbMYSedy42
+BWHK/PBRxNkZrvd+2EShdPSYS9343DhjjThTmQ==
+=jfEX
+-----END PGP PUBLIC KEY BLOCK-----</field>
+        <field type="CharField" name="description">joe's public gpg key</field>
     </object>
     <object pk="5" model="pstore.publickey">
         <field type="DateTimeField" name="created">2013-02-27T14:38:32</field>
         <field type="DateTimeField" name="modified">2013-02-27T14:38:48</field>
         <field to="auth.user" name="user" rel="OneToOneRel">5</field>
-        <field type="TextField" name="key">ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAAAgQDOMBVBteGqm8VFRiPNClGy8RLYf7etIg++qA6Xo7pThorzHU0LvXK0SDeUbTSgPUAfql8pD4hATF89HzOUs5n6YHPvAu2MMXWGfaF5DMb+5f5JbfQLhIohfllmlwWigHinteV6uhP7xNF/4MhEJgvGwa1AP5wESR+QHtefaZDsZQ== ingmar@example.com</field>
-        <field type="CharField" name="description">ingmar's public ssh key</field>
+        <field type="TextField" name="key">-----BEGIN PGP PUBLIC KEY BLOCK-----
+
+mI0EYC6P9AEEANWijZ3qj27IhDfTAPUrf+UeTj9xML5KMxugxkEX1hS6uAz4YHge
+E46aqsw+GLOs1CtTBfZzKdeZercvhiuIn6mJbrZFBdylJxDug06ynSZQ6pcpt1Bp
+25kNB77cKRAZeoG6d0/JW9xFqst6YJEHEsLyllOtFCQIkeW332Qra5vRABEBAAG0
+JEluZ21hciBJIChURVNUKSA8aW5nbWFyQGV4YW1wbGUuY29tPojOBBMBCgA4FiEE
+uJko3lmtjAhvuAHNWGiTG0qJ/ywFAmAuj/QCGy8FCwkIBwIGFQoJCAsCBBYCAwEC
+HgECF4AACgkQWGiTG0qJ/ywCJgQArElMjpvw9UFmtxMqbMw5K4syyhgdN7L9Nzoo
+csdVYin4Llk50mxD1HuJoVxG/307EDXwd4VLZK+CAC7UOjZp7k8t/+2n2BpeCp/O
+EWfpiOABDlyHSLaYnz+zvPO0/gpS3/n1jqdAu/k95SPN9O60ngf7VAXG8+DgEYah
+P2DqrM+4jQRgLo/0AQQAp6nT1A7iJFGFuYTPVJYDFXRfoeLoirl5RSrU9dgYU116
+Lpbn6ReBB3ESlp6ZosETqTpOLDCHceyRgFlgeuOhPei8bP1o86junhSLOM6iU3d9
+mjbsojv9xsAc4yHkwy6L8ZR4EJ/h7vnARgMDd0DLeotV3RMpXUGtRRi8Dg49lJEA
+EQEAAYkBawQYAQoAIBYhBLiZKN5ZrYwIb7gBzVhokxtKif8sBQJgLo/0AhsuAL8J
+EFhokxtKif8stCAEGQEKAB0WIQSluMq1c3gbqmrbHZjcGHiCnrByigUCYC6P9AAK
+CRDcGHiCnrByiq4qBACkz5C1HQvFs4JtXANW8xLGqcfcwEfTQv6bYJ3IGKqga1NP
+VqJI1NqIfIs9835/N8/HP/KRxYmoH+/kmSesX/wsKnmFc4M9TQiWIdnotevXBhaE
+DbNVTtuXwtVMBTjJoMnLoX0FFL3+7jUTGX/T6bmgVHxH3HpkkTw/RLcQhGxm/e3H
+A/43rVDP1WI/YB17/O/Ik5fEB6ITr+jYjL/R84OhnuWgf78kpzSbH9k5JBgguKN2
+Vro1fzTsAPAO30SkwP2Pjr3x+UGukAh0qrCxzLgvmhpw2c6UqqemTpKbDskQQsuW
+5NjX8i/6D7JjqvsdwUMaarfn075ZoMlfxFro9464xeXeSA==
+=FX1D
+-----END PGP PUBLIC KEY BLOCK-----</field>
+        <field type="CharField" name="description">ingmar's public gpg key</field>
     </object>
     <!--
 
@@ -252,7 +296,7 @@ AK968N1Yrw+ytDuus3s7xPXYAw==
         <field to="pstore.object" name="object" rel="ManyToOneRel">1</field>
         <field type="CharField" name="name">password</field>
         <field type="PositiveSmallIntegerField" name="type">3</field>
-        <field type="BlobField" name="value">l2gq0diqODNUuPqrHuu4WpMGkPdQDevbr+Hto3ipdyIdG2oHCUIeYM23u1/+bC8S8lzcMXxjvkT5GczSSYpTO7piFS0FThNmCK5LkCbCwTxWY5ZTu5z+1CpuyUXNf6ipej204HEipYl3wedJgCdVB0KfPd0DXckE8rXrs9Fles4=</field>
+	<field type="BlobField" name="value">hIwD2RQlP9ClosQBA/0emPDZJPIFs5g5flMSgBdPIrp/icpodTypGujIn+IDfTJwi6pGw5hdhUR/ulJWY467/zozPmmphkIgNfFSczh9eZlHtzIAgJ4Y5E9B5Pvc3Ckbi3QIFCKSARxr4XBp2r126mz8dfBe2N3Dwcp7ILbM6YrdAu04apcPBGOxd49gL9JCAQHDn7SY2SlwCpxKbnCnbs4CSmBB1bgo8YAnwekVPHV1OP5pTVKizK3MoXtJ8AHWQ5sWAbagIvMArTJdNArkSD7Q</field>
         <field to="auth.user" name="user" rel="ManyToOneRel">4</field>
     </object>
     <!-- "wAlTeR!" -->
@@ -270,7 +314,7 @@ AK968N1Yrw+ytDuus3s7xPXYAw==
         <field to="pstore.object" name="object" rel="ManyToOneRel">3</field>
         <field type="CharField" name="name">password</field>
         <field type="PositiveSmallIntegerField" name="type">3</field>
-        <field type="BlobField" name="value">l2gq0diqODNUuPqrHuu4WpMGkPdQDevbr+Hto3ipdyIdG2oHCUIeYM23u1/+bC8S8lzcMXxjvkT5GczSSYpTO7piFS0FThNmCK5LkCbCwTxWY5ZTu5z+1CpuyUXNf6ipej204HEipYl3wedJgCdVB0KfPd0DXckE8rXrs9Fles4=</field>
+        <field type="BlobField" name="value">hIwD3Bh4gp6wcooBBACIXzPB74GTNFiouG2eCTvJqSTM+VF2R+LEyohLDYJzoaQ1+asZBgIVOULG8S1Fdk8GkG3u36WDC8ie0wRQNmkX5zETKlo9CJQyyYn69cYifXCiARuBgo+qcRvuwQUw4WUGsiKMfnQ37t8L8xCUjL+39LIVUhu5kc9awtDmtBSjmNJCATvAsYblce/PRlD0tjh6mu5Dt4t5qbwT/xyeaxg2zKKr81Ik5B1afRS/bwZ5Xh4vTzCDzMY9j3uf1RvfCZTnmU2c</field>
         <field to="auth.user" name="user" rel="ManyToOneRel">5</field>
     </object>
     <object pk="7" model="pstore.property">

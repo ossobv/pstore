@@ -17,7 +17,7 @@ keylen=1024 # should be 2048+ for live
 comment=TEST
 set -e # abort on error
 
-for name in 'Alex B' 'Harm G' 'Walter D'; do
+for name in 'Alex B' 'Harm G' 'Walter D' 'Joe J' 'Ingmar I'; do
 	lowsurname=`echo $name | awk '{print tolower($1)}'`
 	email=$lowsurname@example.com
 	password=${lowsurname}2

@@ -29,6 +29,7 @@ from django.db import connection
 from django.db.models import Q
 from django.http import Http404
 from django.shortcuts import get_object_or_404
+from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_POST
 
 from pstorelib.server import urlunquote
@@ -135,6 +136,7 @@ def create_property(object, property, file, user):
 
 
 # NOT nonce_required.. obviously..
+@csrf_exempt
 @require_POST
 @audit_view('creates nonce')
 def create_nonce(request):
@@ -201,8 +203,8 @@ def get_property(request, object_identifier, property_name):
     if not items:
         # Was this because we didn't have permission or because there
         # simply wasn't a property?
-        if (request.user.has_perm('pstore.view_any_object') and
-                not Property.objects.filter(
+        if (request.user.has_perm('pstore.view_any_object')
+                and not Property.objects.filter(
                     object__identifier=object_identifier,
                     name=property_name).exists()):
             raise Http404('No such property')

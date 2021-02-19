@@ -19,8 +19,8 @@ Copyright (C) 2012,2013,2015  Walter Doekes <wdoekes>, OSSO B.V.
     USA.
 """
 import logging
+from wsgiref.util import FileWrapper
 
-from django.core.servers.basehttp import FileWrapper
 from django.http import HttpResponse
 
 from pstorelib.bytes import get_size
@@ -67,7 +67,7 @@ class EncryptedResponse(HttpResponse):
         assert enctype in ('none', 'gpg', 'sshrsa')
 
         if data:
-            assert isinstance(data, str)  # .. and not unicode
+            assert isinstance(data, (bytes, bytearray))
             content = data
             content_length = len(data)
         else:

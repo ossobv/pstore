@@ -47,7 +47,7 @@ def validate_nonce_b64(nonce_b64):
         raise PermissionDenied('Is not a nonce')
 
     # Re-add padding.
-    nonce_b64 += (2 - ((len(nonce_b64) + 2) % 3)) * '='
+    nonce_b64 += (2 - ((len(nonce_b64) + 2) % 3)) * b'='
     try:
         nonce = b64decode(nonce_b64)
     except TypeError:

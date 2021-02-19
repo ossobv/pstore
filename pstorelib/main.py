@@ -46,13 +46,8 @@ ALPHA = ('ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 NUM = '0123456789'
 ALNUM = ALPHA + NUM
 
-try:
-    bytes_stdout = sys.stdout.buffer  # py3 for raw bytes
-    bytes_stdin = sys.stdin.buffer
-except AttributeError:
-    bytes_stdout = sys.stdout  # py2
-    bytes_stdin = sys.stdin
-unicode = type(u'')
+bytes_stdout = sys.stdout.buffer  # py3 for raw bytes
+bytes_stdin = sys.stdin.buffer
 
 
 class PStoreInterface(object):
@@ -118,7 +113,7 @@ class PStoreInterface(object):
         else:
             if info['enctype'] == 'none':
                 sys.stderr.write('WARNING: password as public property?\n')
-            fp = decrypt_with(None)
+            fp = decrypt_with()
 
         password = fp.read()
         return password, object
@@ -289,12 +284,11 @@ def parse_options(args):
             [args[0]] + rc_args + args[1:],  # inject defaults
             'hVcPp:' + 'ak:l:s:u:v',  # command options + configuration options
             ('help', 'version', 'create', 'chpass', 'lookup-machine',
-             'propedit', 'consistency-check') +
-            ('all', 'private-key=', 'search=', 'store-url=', 'user=',
-             'verbose')
+             'propedit', 'consistency-check')
+            + ('all', 'search=', 'store-url=', 'user=', 'verbose')
         )
     except GetoptError as e:
-        raise UserError(unicode(e))
+        raise UserError(str(e))
 
     config = {
         'show_all': False,
@@ -302,8 +296,6 @@ def parse_options(args):
         'user': getuser(),
         'verbose': False
     }
-    if 'HOME' in os.environ:
-        config['privkey_file'] = '%s/.ssh/id_rsa' % os.environ['HOME']
 
     command = None
     for option, arg in optlist:
@@ -350,13 +342,11 @@ def parse_options(args):
         # Configuration options
         elif option in ('--all', '-a'):
             config['show_all'] = True
-        elif option in ('--private-key', '-k'):
-            config['privkey_file'] = arg
         elif option in ('--store-url',):
             while len(arg) and arg[-1] == '/':  # strip trailing slashes
                 arg = arg[0:-1]
-            if (not arg.startswith('http://') and
-                    not arg.startswith('https://')):
+            if (not arg.startswith('http://')
+                    and not arg.startswith('https://')):
                 raise UserError('bad store-url; we only do http(s)', arg)
             config['store_urls'].append(arg)
         elif option in ('--user', '-u'):
@@ -730,7 +720,7 @@ def print_result_related_properties(machine_info):
         info = machine_info['properties'][property]
         if info['enctype'] == 'none':
             if info['data'] is not None:
-                data = info['data'].decrypt_with(None).read()
+                data = info['data'].decrypt_with().read()
                 if b'\n' in data:
                     bytes_stdout.write(b'%s = \\\n | %s\n' % (
                         property.encode('ascii'),
@@ -759,7 +749,7 @@ def print_result_search(properties, config):
             info = props[propname]
             if 'data' in info:
                 assert info['enctype'] == 'none'
-                data = info['data'].decrypt_with(None).read()
+                data = info['data'].decrypt_with().read()
                 if len(data) < 80:
                     fmt_args.append(data.decode('utf-8', 'ascii'))
                 else:
@@ -809,8 +799,6 @@ def run_usage(verbose=False):
          'Privileged users use this to show more machines'),
         ('  --user=USER, -u       ', 0,
          'Your pstore username (defaults to $USER)'),
-        ('  --private-key=FILE    ', 1,
-         'Location of sshrsa private key (old-style)'),
         ('  --store-url=URL       ', 0,
          'Backend URL (supply more as fallbacks)'),
         ('  --verbose, -v         ', 0,
@@ -875,19 +863,15 @@ def pstore(args):
     else:
         askpass = PStoreCrypt.ASKPASS_DEFAULT       # default
 
-    # Expand tilde (~) in file names.
-    ssh_privkey_file = (os.path.expanduser(config.get('privkey_file', '')) or
-                        None)
-
     # Not so nice.. but we have to do this somewhere..
-    PStoreCrypt.create(askpass=askpass, sshrsa_privkey_file=ssh_privkey_file)
+    PStoreCrypt.create(askpass=askpass)
 
     run_command(command or 'default', args, config)
 
 
-def main(args):
+def main():
     try:
-        pstore(args)
+        pstore(sys.argv)
     except KeyboardInterrupt:
         sys.exit(130)  # 128+SIGINT
     except PStoreException as e:
@@ -897,4 +881,4 @@ def main(args):
 
 
 if __name__ == '__main__':
-    main(sys.argv)
+    main()

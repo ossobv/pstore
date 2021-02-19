@@ -23,12 +23,13 @@ import time
 from django.conf import settings
 from django.db import connection
 from django.http import HttpResponse
+from django.utils.deprecation import MiddlewareMixin
 
 from pstore.http import HttpError
 from pstore.security import validate_nonce_b64
 
 
-class AuthenticateByNonceMiddleware(object):
+class AuthenticateByNonceMiddleware(MiddlewareMixin):
     def process_request(self, request):
         if request.method == 'GET':
             nonce_b64 = request.GET.get('nonce_b64')
@@ -38,6 +39,7 @@ class AuthenticateByNonceMiddleware(object):
             nonce_b64 = None
 
         if nonce_b64:
+            nonce_b64 = nonce_b64.encode('ascii')
             assert not hasattr(request, '_cached_user')
             request.user = validate_nonce_b64(nonce_b64)
             request.user.used_nonce = True
@@ -47,7 +49,7 @@ class AuthenticateByNonceMiddleware(object):
         return None
 
 
-class HttpErrorMiddleware(object):
+class HttpErrorMiddleware(MiddlewareMixin):
     def process_exception(self, request, exception):
         if isinstance(exception, HttpError):
             return HttpResponse(content=exception.user_description,
@@ -56,7 +58,7 @@ class HttpErrorMiddleware(object):
         return None
 
 
-class LogSqlToConsoleMiddleware(object):
+class LogSqlToConsoleMiddleware(MiddlewareMixin):
     """
     Log all SQL statements direct to the console (in debug mode only).
     Intended for use with the django development server.
@@ -70,12 +72,11 @@ class LogSqlToConsoleMiddleware(object):
         return None
 
     def process_response(self, request, response):
-        if (settings.DEBUG and
-                connection.queries and
-                (not settings.MEDIA_URL or
-                 not request.META['PATH_INFO'].startswith(
-                     settings.MEDIA_URL)) and
-                not request.META['PATH_INFO'].startswith('/jsi18n/')):
+        if (settings.DEBUG and connection.queries
+                and (not settings.MEDIA_URL
+                     or not request.META['PATH_INFO'].startswith(
+                         settings.MEDIA_URL))
+                and not request.META['PATH_INFO'].startswith('/jsi18n/')):
             print('\n' + '=' * 72)
 
             if 'time' in connection.queries[0]:

@@ -100,11 +100,9 @@ def setup_pstore():
         package_data={'pstorelib': [
             'lgpl-3.0.txt',
         ]},
-        scripts=[
-            'bin/pstore',   # no .py suffix for executables
-        ],
-        install_requires=['pygpgme', 'pyasn1>=0.0.8a', 'pycrypto>=2.0.1'],
-
+        entry_points={'console_scripts': [
+            'pstore = pstorelib.main:main']},
+        install_requires=['gpg>=1.10', 'pycryptodome>=3.10'],
         description='Python Protected Password Store library and client',
         keywords='password encrypted sharing cli',
         **defaults
@@ -125,7 +123,7 @@ def setup_django_pstore():
             'fixtures/*',
             'templates/*.html',
         ]},
-        install_requires=['Django>=1.3,<1.5', 'pstore'],
+        install_requires=['Django>=3.1,<3.2', 'pstore'],
 
         description='Python Protected Password Store server application',
         keywords='password encrypted sharing cli',
@@ -160,6 +158,7 @@ def find_package_modules(self, package, package_dir):
             print('excluding pkg = %s, module = %s, fname = %s' % (
                 (pkg, module, fname)))
     return modules
+
 
 build_py.find_package_modules = find_package_modules
 

@@ -25,6 +25,9 @@ DEFAULT_FROM_EMAIL, SERVER_EMAIL, MANAGERS, ADMINS DATABASES, SECRET_KEY
 should be defined in your site settings.
 
 """
+from logging import Filter
+from logging.handlers import SysLogHandler
+
 # We're in UTC+1, we speak English and we don't do any i18n.
 TIME_ZONE, LANGUAGE_CODE = 'Europe/Amsterdam', 'en-us'
 USE_I18N, USE_L10N, USE_TZ = False, False, False
@@ -36,7 +39,7 @@ STATIC_URL = '/static/'
 SITE_ID = 1
 
 # Middleware.
-MIDDLEWARE_CLASSES = (
+MIDDLEWARE = [
     # #'pstore.middleware.LogSqlToConsoleMiddleware',
 
     # #DJANGO1.4+#'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -51,14 +54,8 @@ MIDDLEWARE_CLASSES = (
     'pstore.middleware.AuthenticateByNonceMiddleware',
 
     # Handle HttpErrors by feeding them as response.
-    # TODO/FIXME: check that the transaction is still aborted
     'pstore.middleware.HttpErrorMiddleware',
-
-    # We want operations to be atomic! But do this after the auth-nonce
-    # middleware so people won't run into the lack of nonces after they abuse
-    # the pstore client (resulting in 403/404s).
-    'django.middleware.transaction.TransactionMiddleware',
-)
+]
 
 # Path to our pstore urls.
 ROOT_URLCONF = 'pstore.urls'
@@ -71,14 +68,31 @@ INSTALLED_APPS = (
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
+    'django.contrib.messages',
     'django.contrib.sessions',
     'django.contrib.staticfiles',
     'pstore',
 )
 
-# Logging.
-from logging import Filter
-from logging.handlers import SysLogHandler
+TEMPLATES = (
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [],
+        'APP_DIRS': True,
+        'OPTIONS': {
+            'context_processors': [
+                'django.contrib.auth.context_processors.auth',
+                'django.template.context_processors.debug',
+                'django.template.context_processors.i18n',
+                'django.template.context_processors.media',
+                'django.template.context_processors.request',
+                'django.template.context_processors.static',
+                'django.template.context_processors.tz',
+                'django.contrib.messages.context_processors.messages',
+            ],
+        },
+    },
+)
 
 
 # (extra LF above for PEP)
@@ -87,6 +101,7 @@ class RequireDebugFalse(Filter):
     def filter(self, record):
         from django.conf import settings
         return not settings.DEBUG
+
 
 LOGGING = {
     # NOTE: If you are getting log messages printed to stdout/stderr, you're

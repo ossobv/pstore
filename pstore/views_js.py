@@ -24,6 +24,7 @@ from collections import defaultdict
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
 from django.db.models import Q
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.views.decorators.http import require_GET
 
@@ -33,7 +34,6 @@ from pstore.decorators import audit_view, nonce_required
 from pstore.http import HttpError
 from pstore.models import Object, ObjectPerm, PublicKey, Property
 from pstore.security import get_object_or_403
-from pstore.xhr import JsonResponse
 
 
 @nonce_required
@@ -118,7 +118,8 @@ def get_object(request, object_identifier):
 
         # If data is small enough, it is set too.
         if property_id in property_values:
-            info['data'] = b64encode(property_values[property_id])
+            info['data'] = b64encode(
+                property_values[property_id]).decode('ascii')
 
         result['properties'][name] = info
 
@@ -137,7 +138,7 @@ def get_object(request, object_identifier):
 
             result['properties'][name] = info
 
-    return JsonResponse(request, result)
+    return JsonResponse(result)
 
 
 @nonce_required
@@ -185,7 +186,7 @@ def list_objects(request):
         result = dict((i, True)
                       for i in qs.values_list('identifier', flat=True))
 
-    return JsonResponse(request, result)
+    return JsonResponse(result)
 
 
 @nonce_required
@@ -248,7 +249,7 @@ def search_properties(request):
             machines[identifier] = {'properties': {}}
         machines[identifier]['properties'][propkey] = info
 
-    return JsonResponse(request, machines)
+    return JsonResponse(machines)
 
 
 @require_GET
@@ -273,7 +274,7 @@ def list_users(request):
             'description': object.description,
         }
 
-    return JsonResponse(request, result)
+    return JsonResponse(result)
 
 
 @nonce_required
@@ -346,8 +347,8 @@ def validate(request):
             per_property[property.name].append(property.user_id)
 
         for property_name, property_user_ids in per_property.items():
-            if (len(property_user_ids) != len(user_ids) or
-                    set(property_user_ids) != set(user_ids)):
+            if (len(property_user_ids) != len(user_ids)
+                    or set(property_user_ids) != set(user_ids)):
                 errors.append((
                     'Object', object.id,
                     ('%s -> %s has wrong number of properties' %
@@ -356,4 +357,4 @@ def validate(request):
                      'properties for this object.'),
                 ))
 
-    return JsonResponse(request, {'errors': errors})
+    return JsonResponse({'errors': errors})

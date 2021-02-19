@@ -18,7 +18,7 @@ Copyright (C) 2010,2012,2013,2015,2016  Walter Doekes <wdoekes>, OSSO B.V.
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307,
     USA.
 """
-from .pstore_settings import *  # noqa
+from pstore.pstore_settings import *  # noqa
 
 import os
 import pwd
@@ -42,31 +42,15 @@ STATIC_ROOT = '/srv/http/pstore/static'
 # DB settings
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        # 'ENGINE': 'django.db.backends.sqlite3',  # for testing
-        'NAME': 'pstore_%s' % _OSUSER,
-        'USER': _OSUSER,
-        'PASSWORD': 'somepassword',
-        'HOST': '',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.environ.get('POSTGRESQL_DB', '%s_pstore' % _OSUSER),
+        'USER': os.environ.get('POSTGRESQL_USER', _OSUSER),
+        'PASSWORD': os.environ.get('POSTGRESQL_PASSWORD', ''),
+        'HOST': os.environ.get('POSTGRESQL_HOST', ''),
         'PORT': '',
         'ATOMIC_REQUESTS': True,
     },
 }
-
-if (sys.argv[1:2] == ['test']
-        and os.environ.get('SQLITE_TESTS') not in (None, '', '0')):
-    DATABASES['default']['ENGINE'] = 'django.db.backends.sqlite3'
-
-if DATABASES['default']['ENGINE'].endswith('.mysql'):
-    DATABASES['default']['OPTIONS'] = {
-        # On older MySQL (<5.6) you may want to add
-        # "SET storage_engine=InnoDB;" below.
-        'init_command':
-            ("SET innodb_strict_mode=ON;"
-             "SET sql_mode='ANSI,STRICT_ALL_TABLES';"),
-    }
-elif DATABASES['default']['ENGINE'].endswith('.sqlite3'):
-    DATABASES['default']['NAME'] = DATABASES['default']['NAME'] + '.db'
 
 # GnuPG requires a writable home.
 # #import os
@@ -94,7 +78,4 @@ if DEBUG:
     }
 
 # Secret key
-# #from random import choice
-# #chars = 'abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(-_=+)'
-# #print(repr(''.join([choice(chars) for i in range(50)])))
-SECRET_KEY = ''  # set this, according to the above
+SECRET_KEY = 'postgres'

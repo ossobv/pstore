@@ -33,7 +33,7 @@ dist: pstore-dist django-pstore-dist pstore-full
 pep: htmlclean makeclean pyclean
 
 htmlclean:
-	find . -name '*.html' | while read n; do \
+	find pstore/ -name '*.html' | while read n; do \
 	  min=0; \
 	  sed -e 's/^\( *\).*/\1/;/^$$/d' < "$$n" | \
 	  sort -u | \
@@ -48,32 +48,20 @@ makeclean:
 	sed -i -e 's/^ \{1,8\}/\t/g;s/[[:blank:]]\+$$//' Makefile
 
 pyclean:
-	@printf '\n** RUNNING PEP CODE VALIDATION **\n\n'
-	@# Replace tabs with spaces, remove trailing spaces, remove trailing newlines.
-	if which pepclean >/dev/null; then \
-	  find . '(' -name '*.py' -o -name '*.html' -o -name '*.xml' -o -name pstore ')' \
-	    -type f -print0 | xargs --no-run-if-empty -0 pepclean; \
-	fi
+	@printf '\n** RUNNING PEP8 CODE VALIDATION **\n\n'
 	# @# Add vim modelines.
 	# find . -name '*.py' -size +0 '!' -perm -u=x -print0 | \
 	#   xargs --no-run-if-empty -0 grep -L '^# vim:' | \
 	#   xargs --no-run-if-empty -d\\n \
 	#     sed -i -e '1i# vim: set ts=8 sw=4 sts=4 et ai:'
-	@# Use a custom --format so the path is space separated for
-	@# easier copy-pasting.
-	if which $(FLAKE) >/dev/null; then \
-	  find . '(' -name '*.py' -o -name pstore ')' -type f -print0 | \
-	    xargs --no-run-if-empty -0 $(FLAKE) --ignore=W602 \
-	      --max-line-length=99 --max-complexity=12 \
-	      --format='%(path)s %(row)d:%(col)d [%(code)s] %(text)s'; \
-	fi; true
+	tox -e flake8; true
 	@echo
 
 
-.PHONY: test testcopyright testdjango testint testlib testpep testtodo _testtodo
+.PHONY: test testcopyright testdjango testint testpep testtodo _testtodo
 
 # run the quickest tests first
-test: clean testcopyright pep testlib testint testdjango testtodo
+test: clean testcopyright pep testint testdjango testtodo
 	@printf '\n** ALL TESTS COMPLETED **\n\n'
 
 testint:
@@ -89,16 +77,11 @@ testint:
 
 testdjango:
 	@printf '\n** RUNNING DJANGO TESTS **\n\n'
-	@./manage test pstore --noinput  # or without 'pstore'
-
-testlib:
-	@printf '\n** RUNNING LIB UNITTESTS **\n\n'
-	PYTHONPATH=$$(pwd) sh -c 'for x in pstorelib/*.py; do printf "\n$$x: "; python -m $$(echo $${x%.py} | tr -s '/' '.'); done'
-	@echo
+	@./manage test --noinput
 
 testcopyright:
 	@printf '\n** SEARCHING FOR MISSING COPYRIGHT TEXT **\n\n'
-	@! find . -type f '(' -name '*.py' -o -name pstore ')' | \
+	@! ( find pstore/ -type f -name '*.py'; find pstorelib/ -type f -name '*.py' ) | \
 	  xargs -d\\n grep -cE '^(# )?Copyright' | sed '/:0$$/!d;s/:0$$//' | \
 	  while read f; do test -s "$$f" && echo "$$f"; done | grep ''
 	@echo

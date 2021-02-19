@@ -23,7 +23,6 @@ from logging import getLogger
 
 from django.contrib.auth.decorators import user_passes_test
 from django.core.exceptions import PermissionDenied
-from django.utils.decorators import available_attrs
 
 
 logger = getLogger('pstore.audit')
@@ -40,13 +39,13 @@ def audit_view(description, mutates=False):
             # ...
     """
     def decorator(func):
-        @wraps(func, assigned=available_attrs(func))
+        @wraps(func)
         def inner(request, *args, **kwargs):
-            humanargs = ', '.join(list(args) +
-                                  ['%s=%s' % (k, v)
-                                   for k, v in kwargs.items()])
+            humanargs = ', '.join(
+                list(args)
+                + ['%s=%s' % (k, v) for k, v in kwargs.items()])
             address = str(request.META.get('REMOTE_ADDR', 'UNKNOWN_IP'))
-            if request.user.is_anonymous():
+            if not request.user.is_authenticated:
                 message = (u'Anonymous user on %s %s %s' %
                            (address, description, humanargs))
             else:
@@ -75,9 +74,11 @@ def is_logged_in_with_nonce(user):
     """
     Raises a 403 error in case the user is not logged in.
     """
-    if user.is_anonymous():
+    if not user.is_authenticated:
         raise PermissionDenied('User is not logged in')
     if not user.used_nonce:
         raise PermissionDenied('User did not log in with a nonce')
     return True
+
+
 nonce_required = user_passes_test(is_logged_in_with_nonce)

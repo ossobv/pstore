@@ -57,7 +57,7 @@ class Backend(object):
             reader = self._communicate(path, data=(), query={'u': self.user})
         except NotAllowed:
             raise NoNonce()
-        nonce = reader.decrypt_with(None).read()
+        nonce = reader.decrypt_with().read()
         # Passing non-UTF-8 binary data in POST data is legit, but not
         # understood by Django. We could pass it as a file, or we can encode it
         # as base64. Choosing base64 because of the limited size of the nonce.
@@ -69,7 +69,7 @@ class Backend(object):
         path = '/propget/%s/%s.bin' % (urlquote(objectid), urlquote(property))
         out = {u'nonce_b64': self.newnonce(), 'u': self.user}
         reader = self._communicate(path, query=out)
-        return reader.decrypt_with(None)
+        return reader.decrypt_with()
 
     def propset(self, objectid, property, files=None, o_excl=False):
         assert files
@@ -123,8 +123,8 @@ class Backend(object):
         # tuples.
         query_string = ''
         if query:
-            assert (isinstance(query, dict) or isinstance(query, list) or
-                    isinstance(query, tuple))
+            assert (isinstance(query, dict) or isinstance(query, list)
+                    or isinstance(query, tuple))
             query_string = '?' + urlencode(query)
 
         if files:
@@ -156,8 +156,8 @@ class Backend(object):
             data = form.get_data()
 
         elif data is not None:
-            assert (isinstance(data, dict) or isinstance(data, list) or
-                    isinstance(data, tuple))
+            assert (isinstance(data, dict) or isinstance(data, list)
+                    or isinstance(data, tuple))
             content_type = 'application/x-www-form-urlencoded'
             data = urlencode(data).encode('ascii')
             content_length = len(data)

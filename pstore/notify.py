@@ -19,14 +19,14 @@ Copyright (C) 2013,2015  Walter Doekes <wdoekes>, OSSO B.V.
     USA.
 """
 from base64 import b64encode
-from email.Utils import formataddr
+from email.utils import formataddr
 
 from django.contrib.admin.models import DELETION, LogEntry
 from django.contrib.contenttypes.models import ContentType
 from django.conf import settings
 from django.core.mail import send_mail
 from django.db.models import Q
-from django.utils.encoding import force_unicode
+from django.utils.encoding import force_text
 
 
 def collect_object_info(property_qs, user):
@@ -118,7 +118,7 @@ def notify_object_deletion(object):
             user=user,  # NOTE: not the *deleting* user
             content_type=ContentType.objects.get_for_model(object),
             object_id=object.pk,
-            object_repr=force_unicode(object),
+            object_repr=force_text(object),
             action_flag=DELETION,
             change_message=flatbody
         )
