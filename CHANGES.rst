@@ -3,10 +3,14 @@ pstore :: Python Protected Password Store
 
 The list of changes.
 
-2021-02-19: 2.0.0.dev1
+2021-02-23: 2.0.0
 -----------------
  * Switch to Python 3 only.
  * Upgrade to django-3.1.6.
+ * Upgrade to pycryptodome-3.10.1.
+ * Upgrade to gpg-1.10.0.
+ * Refactoring and dropping old code.
+ * Minor fixes and improvements.
 
 2018-10-08: 1.3.3
 -----------------
