@@ -225,6 +225,7 @@ def get_property(request, object_identifier, property_name):
     return EncryptedResponse(fp=file, enctype=property.enctype())
 
 
+@csrf_exempt
 @nonce_required
 @require_POST
 @audit_view('sets or replaces a property', mutates=True)
@@ -329,6 +330,7 @@ def set_property(request, object_identifier, property_name):
     return VoidResponse()
 
 
+@csrf_exempt
 @nonce_required
 @require_POST
 @audit_view('updates properties and/or permissions', mutates=True)

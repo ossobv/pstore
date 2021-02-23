@@ -32,6 +32,7 @@ def audit_view(description, mutates=False):
     """
     Decorator to log the calling of this view.  Usage::
 
+        @csrf_exempt
         @nonce_required
         @require_POST
         @audit_view('bakes pizza', mutates=True)
