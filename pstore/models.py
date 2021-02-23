@@ -291,19 +291,9 @@ class Nonce(ValidationMixin, models.Model):
 
     def generate(self):
         assert not self.value
-
-        value = []
         bytes = 32
         random = getrandbits(bytes * 8)  # is this random enough?
-
-        # Long-to-bytes in a little endian fashion.
-        while random:
-            value.append(b'%c' % (random & 0xff),)
-            random >>= 8
-        while len(value) < bytes:
-            value.append('\0')  # most significant bytes 0?
-
-        self.value = b''.join(value)
+        self.value = random.to_bytes(length=bytes, byteorder='little')
         assert self.is_sane(self.value)
 
     def encrypt(self):
