@@ -75,7 +75,7 @@ def collect_object_info(property_qs, user):
                               for i in readable.split('\n')).rstrip(),))
         if value is not None:
             info.append('; base64 encoded data')
-            encoded = b64encode(value)
+            encoded = b64encode(value).decode('ascii')
             for i in range(0, len(encoded), 70):
                 info.append('  %s' % (encoded[i:(i + 70)],))
         info.append('')

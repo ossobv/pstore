@@ -243,7 +243,7 @@ def search_properties(request):
             'enctype': ('none', 'any')[proptype != Property.TYPE_PUBLIC],
         }
         if propvalue:
-            info['data'] = b64encode(propvalue)
+            info['data'] = b64encode(propvalue).decode('ascii')
 
         if identifier not in machines:
             machines[identifier] = {'properties': {}}
