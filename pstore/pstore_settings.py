@@ -40,10 +40,11 @@ SITE_ID = 1
 
 # Middleware.
 MIDDLEWARE = [
-    # #'pstore.middleware.LogSqlToConsoleMiddleware',
-
-    # #DJANGO1.4+#'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    #'pstore.middleware.LogSqlToConsoleMiddleware',
+    'django.middleware.security.SecurityMiddleware',
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.middleware.common.CommonMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
 
     # Make sure we have a the requirements for admin work.
     'django.contrib.sessions.middleware.SessionMiddleware',     # sessions

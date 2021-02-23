@@ -39,6 +39,9 @@ ADMINS = MANAGERS = (('Developers', '%s@example.com' % _OSUSER),)
 # Path settings
 STATIC_ROOT = '/srv/http/pstore/static'
 
+# Allowed hosts.
+ALLOWED_HOSTS = ['*']
+
 # DB settings
 DATABASES = {
     'default': {
