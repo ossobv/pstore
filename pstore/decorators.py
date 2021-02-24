@@ -47,23 +47,17 @@ def audit_view(description, mutates=False):
                 + ['%s=%s' % (k, v) for k, v in kwargs.items()])
             address = str(request.META.get('REMOTE_ADDR', 'UNKNOWN_IP'))
             if not request.user.is_authenticated:
-                message = (u'Anonymous user on %s %s %s' %
+                message = ('Anonymous user on %s %s %s' %
                            (address, description, humanargs))
             else:
                 username = request.user.username.replace(' ', '_')
-                message = (u'User %s on %s %s %s' %
+                message = ('User %s on %s %s %s' %
                            (username, address, description, humanargs))
 
             if mutates:
-                # Use 'warning' as there is no 'notice' level. And encode
-                # as UTF-8 because the automatic encoding would add a BOM
-                # before the message. See:
-                # http://serverfault.com/questions/407643/
-                #       rsyslog-update-on-amazon-linux-suddenly-treats-
-                #       info-level-messages-as-emerg
-                logger.warning(message.encode('utf-8'))
+                logger.warning(message)
             else:
-                logger.info(message.encode('utf-8'))
+                logger.info(message)
 
             return func(request, *args, **kwargs)
         return inner
