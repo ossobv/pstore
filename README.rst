@@ -201,16 +201,16 @@ Make sure you have a C compiler (gcc) and python development headers.
 ::
 
     sudo apt-get install build-essential
-    sudo apt-get install python-dev
+    sudo apt-get install python3-dev
 
 Or you could install the dependencies manually.
 
 ::
 
     # for the client and server
-    sudo apt-get install python-gpgme python-pyasn1 python-crypto
+    sudo apt-get install python3-gpg python3-pycryptodome
     # for the server
-    sudo apt-get install python-django python-mysqldb
+    sudo apt-get install python3-django python3-mysqldb
 
 fatal error: gpgme.h: No such file or directory
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -219,7 +219,7 @@ pygpgme requires the libgpgme development headers.
 
 ::
 
-    sudo apt-get install libgpgme11-dev
+    sudo apt-get install libgpgme-dev
 
 Couldn't find index page for 'pstore' (maybe misspelled?)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -243,7 +243,7 @@ For the server, you'll probably need to do more than just uninstalling
 ``django-pstore``. After all, you put the app in a Django project and
 you created a database for it.
 
-Note that dependencies like Django, pyasn1, pycrypto, pygpgme, aren't
+Note that dependencies like Django, pycryptodome, gpg, aren't
 uninstalled automatically.
 
 ImportError: No module named pstorelib.bytes
