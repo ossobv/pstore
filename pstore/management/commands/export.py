@@ -19,7 +19,6 @@ Copyright (C) 2017,2018  Walter Doekes <wdoekes>, OSSO B.V.
     USA.
 """
 from decimal import Decimal
-from optparse import make_option
 
 from django.contrib.auth.models import User
 from django.core.management.base import BaseCommand
@@ -40,16 +39,15 @@ class Command(BaseCommand):
         values.
     """.replace('\n        ', '\n').strip()
 
-    option_list = BaseCommand.option_list + (
-        make_option(
+    def add_arguments(self, parser):
+        parser.add_argument(
             '--with-encrypted', action='store_true', default=False, help=(
-                'Also list encrypted properties (without value obviously)')),
-        make_option(
+                'Also list encrypted properties (without value obviously)'))
+        parser.add_argument(
             '--common-if-gte', action='store', type=int,
             default=8, metavar='N', help=(
                 'Properties are considered common if used by at least N '
-                'objects (greater than or equal)')),
-    )
+                'objects (greater than or equal)'))
 
     def handle(self, **kwargs):
         self.show_encrypted = kwargs['with_encrypted']
