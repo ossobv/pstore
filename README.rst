@@ -1,5 +1,7 @@
-pstore :: Python Protected Password Store
-=========================================
+|PSTORE|
+========
+
+*pstore :: Python Protected Password Store*
 
 .. _`back to top`:
 
@@ -316,3 +318,7 @@ Further, you may need to increase the ``max_allowed_packet`` to
 something higher than ``16MB`` if you want to store larger files.
 
 (`back to top`_)
+
+
+.. |PSTORE| image:: assets/pstore-head.png
+    :alt: Pstore
