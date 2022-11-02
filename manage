@@ -65,7 +65,9 @@ test)
     mkdir -p "$GNUPGHOME" && chmod 0700 "$GNUPGHOME"
     gpg --import docs/examples/*.pub
     gpg --import docs/examples/*.key
-    exec $django_admin "$arg1" "$@"
+    if $django_admin "$arg1" "$@"; then
+        FAILFAST=1 ./docs/integrationtest.sh
+    fi
     ;;
 *)
     # Run the regular commands

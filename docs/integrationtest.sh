@@ -1,7 +1,14 @@
 #!/bin/bash
 # vim: set ts=8 sw=4 sts=4 et ai tw=71:
+test -n "$BASH_VERSION" || exit 1  # using bashisms
 FAILFAST="${FAILFAST}"   # set to non-empty to exit immediately
 SKIPLARGE="${SKIPLARGE:-1}" # set to non-empty to skip largefile tests
+
+# Suggest GNUPGHOME from main project dir.
+SUGGESTED_GNUPGHOME=$(cd "$(dirname "$0")/../tests.gnupghome"; pwd)
+if test "$GNUPGHOME" != "$SUGGESTED_GNUPGHOME"; then
+    echo "info: Suggesting GNUPGHOME=$SUGGESTED_GNUPGHOME" >&2
+fi
 
 # If you want to run the server yourself, specify the store-url on the
 # command line.
@@ -103,7 +110,11 @@ if test -n "$PORT"; then
     echo "Starting daemon on port $PORT:"
     n=0; until nc 127.0.0.1 $PORT -zw1; do
         printf .; n=$((n+1)); sleep 1
-        if test $n -gt 5; then echo 'too slow, no virtualenv?'; exit 1; fi
+        if test $n -gt 5; then
+            echo 'taking too long. is your virtualenv/project set up?' >&2
+            echo "please try/fix: ./manage runserver 127.0.0.1:$PORT" >&2
+            exit 1
+        fi
     done; echo running
 fi
 
