@@ -20,7 +20,8 @@ django_admin=`which "django-admin"`
 django_admin="python -tt $django_admin"
 
 # Try regular ./manage extensions
-if [ "$arg1" = "dbdump" ]; then
+case "$arg1" in
+dbdump)
     shell="$django_admin shell --plain" # plain instead of ipython
     setup='from django.conf import settings as s; g = lambda x: s.DATABASES["default"][x]' # django>=1.2
     engine="`echo $setup'; print "$$$%s" % g("ENGINE")' | $shell 2>/dev/null | sed -e '/\\$\\$\\$/!d;s/^.*\\$\\$\\$\\(.*\\)/\1/'`"
@@ -49,14 +50,25 @@ if [ "$arg1" = "dbdump" ]; then
         else pg_dump "$opts" "$@"; fi
         ;;
     esac
-elif [ "$arg1" = "flushall" ]; then
+    ;;
+flushall)
     printf 'Flushing all data to example setup! Continue [y/n]? '
     read x; [ "$x" = y ] || exit 1
     $django_admin migrate --noinput &&
             yes "`printf 'yes\nno'`" | $django_admin flush &&
             $django_admin loaddata example_data
             echo 'Imported example_data!'
-# Run the regular commands
-else
-    $django_admin "$arg1" "$@"
-fi
+    ;;
+test)
+    GNUPGHOME=$projectpath/tests.gnupghome
+    export GNUPGHOME
+    mkdir -p "$GNUPGHOME" && chmod 0700 "$GNUPGHOME"
+    gpg --import docs/examples/*.pub
+    gpg --import docs/examples/*.key
+    exec $django_admin "$arg1" "$@"
+    ;;
+*)
+    # Run the regular commands
+    exec $django_admin "$arg1" "$@"
+    ;;
+esac
