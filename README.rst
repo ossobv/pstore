@@ -291,13 +291,6 @@ private ssh key: it's the ssh-agent, even though it's the gnome-keyring
 who asked for the password. Clearing the ssh-agent cache is a matter of
 doing ``ssh-add -D``.)*
 
-crypto error: encrypt message too long
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-You're probably trying to set a larger property on an object where an
-sshrsa user has permissions. Either convert all users to use GPG or
-upload the large property as public (unencrypted!) property.
-
 Issues with large file support
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

@@ -64,7 +64,7 @@ class EncryptedResponse(HttpResponse):
         Specify either file or data.
         """
         assert bool(data) ^ bool(fp)
-        assert enctype in ('none', 'gpg', 'sshrsa')
+        assert enctype in ('none', 'gpg')
 
         if data:
             assert isinstance(data, (bytes, bytearray))
