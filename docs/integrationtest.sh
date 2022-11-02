@@ -1,14 +1,19 @@
 #!/bin/bash
-# vim: set ts=8 sw=4 sts=4 et ai tw=71:
+# vim: set ts=8 sw=4 sts=4 et ai tw=79:
 test -n "$BASH_VERSION" || exit 1  # using bashisms
 FAILFAST="${FAILFAST}"   # set to non-empty to exit immediately
 SKIPLARGE="${SKIPLARGE:-1}" # set to non-empty to skip largefile tests
 
-# Suggest GNUPGHOME from main project dir.
+echo '----------------------------------------------------------------' >&2
 SUGGESTED_GNUPGHOME=$(cd "$(dirname "$0")/../tests.gnupghome"; pwd)
 if test "$GNUPGHOME" != "$SUGGESTED_GNUPGHOME"; then
     echo "info: Suggesting GNUPGHOME=$SUGGESTED_GNUPGHOME" >&2
 fi
+echo "info: This setup requires you to have loaded example_data into the" >&2
+echo "info: current dev env: ./manage flushall" >&2
+echo 'notice: User GPG passwords are <username>2' >&2
+echo 'warning: flushall is REQUIRED after each integration test run!' >&2
+echo '----------------------------------------------------------------' >&2
 
 # If you want to run the server yourself, specify the store-url on the
 # command line.

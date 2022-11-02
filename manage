@@ -1,5 +1,5 @@
 #!/bin/sh
-# vim: ts=8 sw=4 sts=4 noet ai:
+# vim: ts=8 sw=4 sts=4 et ai:
 export DJANGO_SETTINGS_MODULE="${DJANGO_SETTINGS_MODULE:-pstore.settings}"
 projectpath="`(cd "\`dirname "$0"\`" >/dev/null; pwd; cd - >/dev/null)`"
 
@@ -55,7 +55,7 @@ flushall)
     printf 'Flushing all data to example setup! Continue [y/n]? '
     read x; [ "$x" = y ] || exit 1
     $django_admin migrate --noinput &&
-            yes "`printf 'yes\nno'`" | $django_admin flush &&
+            yes "`printf 'yes\nno'`" | $django_admin flush >/dev/null 2>&1 &&
             $django_admin loaddata example_data
             echo 'Imported example_data!'
     ;;
@@ -63,9 +63,13 @@ test)
     GNUPGHOME=$projectpath/tests.gnupghome
     export GNUPGHOME
     mkdir -p "$GNUPGHOME" && chmod 0700 "$GNUPGHOME"
-    gpg --import docs/examples/*.pub
-    gpg --import docs/examples/*.key
+    echo 'INFO: example GPG user passwords are: <username> + "2"'
+    gpg --import docs/examples/[aijw]*.pub  # not harm
+    gpg --import docs/examples/[aijw]*.key  # not harm
     if $django_admin "$arg1" "$@"; then
+        # Remove Harm harm@example.com secret GPG key for testing purposes
+        gpg --batch --delete-secret-keys AB933A9DF55AA0313450C524DD070DB4AF37FBFF
+        # Run tests and bail early on failure
         FAILFAST=1 ./docs/integrationtest.sh
     fi
     ;;
