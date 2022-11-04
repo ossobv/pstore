@@ -1,8 +1,10 @@
 #!/bin/bash
 # vim: set ts=8 sw=4 sts=4 et ai tw=79:
 test -n "$BASH_VERSION" || exit 1  # using bashisms
-FAILFAST="${FAILFAST}"   # set to non-empty to exit immediately
-SKIPLARGE="${SKIPLARGE:-1}" # set to non-empty to skip largefile tests
+FAILFAST="${FAILFAST}"      # set to non-empty to exit immediately
+SKIPLARGE="${SKIPLARGE:-1}" # set to empty to do largefile tests
+                            # (disabled by default, because it requires
+                            # special mysqld config)
 
 echo '----------------------------------------------------------------' >&2
 SUGGESTED_GNUPGHOME=$(cd "$(dirname "$0")/../tests.gnupghome"; pwd)

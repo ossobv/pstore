@@ -62,7 +62,7 @@ def create_property(object, property, file, user):
         # Tricks! We'll use a custom INSERT on localhost. Otherwise we'll
         # run into the MySQL max_packet_size limit.
         tempname = file.temporary_file_path()
-        data = '...loading...'
+        data = b'...loading...'
     else:
         tempname = None
         data = file.read()
