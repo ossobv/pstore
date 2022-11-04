@@ -95,6 +95,8 @@ TEMPLATES = (
     },
 )
 
+DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'  # use max 2^9 records
+
 
 # (extra LF above for PEP)
 class RequireDebugFalse(Filter):
