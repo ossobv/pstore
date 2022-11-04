@@ -26,7 +26,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.conf import settings
 from django.core.mail import send_mail
 from django.db.models import Q
-from django.utils.encoding import force_text
+from django.utils.encoding import force_str
 
 
 def collect_object_info(property_qs, user):
@@ -118,7 +118,7 @@ def notify_object_deletion(object):
             user=user,  # NOTE: not the *deleting* user
             content_type=ContentType.objects.get_for_model(object),
             object_id=object.pk,
-            object_repr=force_text(object),
+            object_repr=force_str(object),
             action_flag=DELETION,
             change_message=flatbody
         )
