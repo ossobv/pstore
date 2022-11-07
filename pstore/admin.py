@@ -96,7 +96,7 @@ class PropertyAdmin(admin.ModelAdmin):
         if (object.type & object.BIT_ENCRYPTED):
             return '(encrypted)'
 
-        value = object.value[0:32]
+        value = object.value[0:32].decode('utf-8')
         if len(value) >= 32:
             value = value + '...'
         return repr(value)  # makes sure we won't see non-ascii
