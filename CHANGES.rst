@@ -3,6 +3,13 @@ pstore :: Python Protected Password Store
 
 The list of changes.
 
+2022-11-07: 2.1.0
+-----------------
+ * Upgrade to django-4.1.3.
+ * Fix tests, both regular and integration.
+ * More dropping of old code.
+ * Add artwork to repo.
+
 2021-02-23: 2.0.0
 -----------------
  * Switch to Python 3 only.

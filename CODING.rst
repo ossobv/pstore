@@ -129,7 +129,7 @@ FAQ/Notes
 
         # > Imports should be grouped in the following order:
         # > 1. standard library imports (os, sys)
-        # > 2. related third party imports (Crypto, django, gpgme)
+        # > 2. related third party imports (django, gpgme)
         # > 3. local application/library specific imports (pstorelib)
         # > You should put a blank line between each group of imports.
         # http://www.python.org/dev/peps/pep-0008/#imports

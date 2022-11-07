@@ -101,7 +101,7 @@ def setup_pstore():
         ]},
         entry_points={'console_scripts': [
             'pstore = pstorelib.main:main']},
-        install_requires=['gpg>=1.10', 'pycryptodome>=3.10'],
+        install_requires=['gpg>=1.10'],
         description='Python Protected Password Store library and client',
         keywords='password encrypted sharing cli',
         **defaults
