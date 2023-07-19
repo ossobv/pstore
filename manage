@@ -1,7 +1,7 @@
 #!/bin/sh
 # vim: ts=8 sw=4 sts=4 et ai:
 export DJANGO_SETTINGS_MODULE="${DJANGO_SETTINGS_MODULE:-pstore.settings}"
-projectpath="`(cd "\`dirname "$0"\`" >/dev/null; pwd; cd - >/dev/null)`"
+projectpath="$(cd "$(dirname "$0")" >/dev/null && pwd)"
 
 # Set python path according project path and optionally django path
 pythonpath="$projectpath"
@@ -10,6 +10,11 @@ export PYTHONPATH="$pythonpath"
 
 # Do show deprecation warnings
 export PYTHONWARNINGS="d"
+
+# Source manage.cfg if it exists
+# E.g. for:
+# test -z "$VIRTUAL_ENV" && . /srv/pstore/.venv/pstore-py3.10/bin/activate
+test -f "$projectpath/manage.cfg" && . "$projectpath/manage.cfg"
 
 # The django-admin app wants a non-option as first argument
 arg1="$1"; [ $# -gt 0 ] && shift; [ -z "$arg1" ] && arg1=help
