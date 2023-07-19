@@ -21,9 +21,18 @@ Copyright (C) 2010,2012,2013,2015  Walter Doekes <wdoekes>, OSSO B.V.
 import time
 
 from django.conf import settings
+from django.contrib.auth import REDIRECT_FIELD_NAME
 from django.db import connection
 from django.http import HttpResponse
 from django.utils.deprecation import MiddlewareMixin
+from django.shortcuts import redirect
+from django.utils.http import url_has_allowed_host_and_scheme
+
+try:
+    from kleides_dssoclient.middleware import DssoLoginMiddleware
+except ImportError:
+    DssoLoginMiddleware = None
+
 
 from pstore.http import HttpError
 from pstore.security import validate_nonce_b64
@@ -94,3 +103,28 @@ class LogSqlToConsoleMiddleware(MiddlewareMixin):
                     len(connection.queries), time.time() - self.t0))
 
         return response
+
+
+if DssoLoginMiddleware:
+    class PstoreDssoLoginMiddleware(DssoLoginMiddleware):
+        def process_request(self, request):
+            # Only initiate DSSO authentication when visiting the login url.
+            if not request.path.startswith((
+                    settings.LOGIN_URL, '/accounts/login/', '/login/')):
+                return
+
+            # Authenticate.
+            response = super().process_request(request)
+
+            if response is None and request.user.is_authenticated:
+                # Perform redirect after login.
+                next_url = request.POST.get(
+                    REDIRECT_FIELD_NAME,
+                    request.GET.get(REDIRECT_FIELD_NAME))
+                if not url_has_allowed_host_and_scheme(
+                        url=next_url, allowed_hosts={request.get_host()},
+                        require_https=request.is_secure()):
+                    next_url = '/'
+                return redirect(next_url)
+
+            return response

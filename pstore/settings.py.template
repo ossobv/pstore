@@ -101,3 +101,11 @@ if DEBUG:
 # #chars = 'abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(-_=+)'
 # #print(repr(''.join([choice(chars) for i in range(50)])))
 SECRET_KEY = ''  # set this, according to the above
+
+# Optionally one can use the kleides_dssoclient to provide user auth
+# KLEIDES_DSSO_ENDPOINT = 'https://DISCOURSE_SSO/sso/pstore.example.com/'
+# KLEIDES_DSSO_SHARED_KEY = '<the_shared_secret>'
+# MIDDLEWARE.append('pstore.middleware.PstoreDssoLoginMiddleware')
+# AUTHENTICATION_BACKENDS = (  # the only backend needed
+#     'pstore.backends.PstoreDssoLoginBackend',
+# )
