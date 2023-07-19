@@ -1,4 +1,9 @@
 *.pyc
 *.pyo
 *.sw?
-pstore/settings.py
+
+/manage.cfg
+/pstore/settings.py
+
+/.static/
+/.venv/
