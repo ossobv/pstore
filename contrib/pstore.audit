@@ -1,13 +1,24 @@
 #!/bin/sh
 # vim: set ts=8 sw=4 sts=4 et ai:
 
-date_re=$(LC_ALL=C date +'^%b %e ' -d '-20 hours')
+todays_logs() {
+    journalctl -S "$(date +'%Y-%m-%d')" \
+        -o cat -u uwsgi.service --grep pstore.audit
+}
+
+yesterdays_logs() {
+    journalctl -S "$(date -d '-20 hours' +'%Y-%m-%d')" -U "$(date +%Y-%m-%d)" \
+        -o cat -u uwsgi.service --grep pstore.audit
+}
+
 out=$(
-    (grep "$date_re.*uwsgi[][][0-9]*[][]: pstore.audit" /var/log/auth.log |
-     awk '/reads object details/{print "R: " $8 " (" $10 "): " $14}'
-     grep "$date_re.*uwsgi[][][0-9]*[][]: pstore.audit" /var/log/auth.log |
-     awk '/sets or replaces a property/{print "W: " $8 " (" $10 "): " $16 " " $17}') | sort -u
+    (yesterdays_logs |
+        awk '/reads object details/{print "R: " $3 " (" $5 "): " $9}';
+     yesterdays_logs |
+        awk '/sets or replaces a property/{print "W: " $3 " (" $5 "): " $11 " " $12}') |
+    sort -u
 )
+
 if test -n "$out"; then
     echo "$out" | awk '/./{print $2}' | sort | uniq -c | sed -e 's/^/SUM:/'
     echo
