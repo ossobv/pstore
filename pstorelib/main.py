@@ -27,7 +27,6 @@ import os
 import sys
 from getopt import GetoptError, gnu_getopt
 from getpass import getpass, getuser
-from tempfile import mktemp
 
 from pstorelib import VERSION_STRING
 from pstorelib.bytes import FileWithoutTrailingEnter, sendfile
