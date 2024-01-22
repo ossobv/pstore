@@ -3,6 +3,14 @@ pstore :: Python Protected Password Store
 
 The list of changes.
 
+2024-01-22: 2.2.0
+-----------------
+ * Add support for ecc/ecdsa/curve25519 keys; fixes:
+     CryptError('crypto error', 'GPG key import error',
+       Exception('Unsupported public key algorithm 22'))
+ * Contrib/misc. fixes.
+ * Python 3 admin interface fix.
+
 2022-11-07: 2.1.0
 -----------------
  * Upgrade to django-4.1.3.
