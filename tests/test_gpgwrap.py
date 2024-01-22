@@ -20,7 +20,7 @@ Copyright (C) 2012,2013,2015-2016,2018  Walter Doekes <wdoekes>, OSSO B.V.
 """
 from unittest import TestCase
 
-from pstorelib.gpg import Data, GPGCrypt
+from pstorelib.gpgwrap import Data, GPGCrypt
 
 
 class Test(TestCase):

@@ -40,7 +40,7 @@ SITE_ID = 1
 
 # Middleware.
 MIDDLEWARE = [
-    #'pstore.middleware.LogSqlToConsoleMiddleware',
+    # #'pstore.middleware.LogSqlToConsoleMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.middleware.common.CommonMiddleware',

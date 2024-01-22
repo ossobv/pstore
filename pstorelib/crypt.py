@@ -24,7 +24,7 @@ from os import fdopen
 from tempfile import SpooledTemporaryFile
 
 from pstorelib.bytes import can_seek, get_size, sendfile
-from pstorelib.gpg import GPGCrypt, Data as GPGData
+from pstorelib.gpgwrap import GPGCrypt, Data as GPGData
 
 
 MAX_INMEMORY_SIZE = 1048576  # 1MB or we switch to tempfiles
@@ -265,38 +265,3 @@ class CryptoReader(object):
 
         gpgcrypt.decrypt(input=input, output=output)
         return output
-
-
-def decrypts(encrypted, type):
-    """
-    Decrypt ``encrypted`` (a ``str`` (byte string) instance containing
-    encrypted data) to a bytestring.
-
-    Encryption type ``type`` must be 'gpg'.
-
-    Called ``decrypts`` and not ``decrypt`` because of its similarity with
-    ``pickle.loads()`` which also takes a byte string.
-
-    Can raise a ``CryptError``.
-
-    NOTE: This function is not used by pstore at the moment. But it exists to
-    complement encrypts which is used.
-    """
-    obj = CryptoReader(data=encrypted, enctype=type)
-    file = obj.decrypt_with()
-    return file.read()
-
-
-def encrypts(unencrypted, public_key):
-    """
-    Encrypt ``unencrypted`` (a ``str`` (byte string) instance) as a byte string
-    using ``public_key`` as public key.
-
-    The ``public_key`` must be a human readable public key of the GPG/PGP type.
-
-    Called ``encrypts`` and not ``encrypt`` because of its similarity with
-    ``pickle.dumps()`` which also returns a byte string.
-    """
-    obj = CryptoWriter(data=unencrypted)
-    file = obj.encrypt_with(public_key)
-    return file.read()

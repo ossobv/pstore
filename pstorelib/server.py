@@ -211,7 +211,7 @@ class Backend(object):
             first_url = self.urls[0]
             exception = BackendDown('could not connect to %s' % (first_url,))
             exception.__cause__ = first_exception[1]  # PEP 3134 style
-            raise exception  # following form is not python3 compabitle
+            raise exception  # following form is not python3 compatible
             # raise exception, None, first_exception[2]  # pep complaint: W602
 
         return response

@@ -27,7 +27,7 @@ from django.db import models
 from django.db.models.signals import pre_delete
 from django.utils.translation import gettext_lazy as _
 
-from pstorelib.crypt import encrypts
+from pstorelib.crypt import CryptoWriter
 from pstorelib.exceptions import CryptError
 
 from pstore.db import Model, ValidationMixin
@@ -303,7 +303,9 @@ class Nonce(ValidationMixin, models.Model):
 
         publickey = self.user.publickey
         try:
-            self.encrypted = encrypts(self.value, public_key=publickey.key)
+            writer = CryptoWriter(self.value)
+            encrypted_file = writer.encrypt_with(publickey.key)
+            self.encrypted = encrypted_file.read()
         except CryptError as e:
             raise CryptError("Encrypting for '%s' failed" % (self.user,), e)
 

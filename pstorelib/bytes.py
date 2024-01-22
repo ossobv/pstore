@@ -19,8 +19,6 @@ Copyright (C) 2012,2013,2015,2018  Walter Doekes <wdoekes>, OSSO B.V.
     USA.
 """
 
-from io import BytesIO
-
 __all__ = ('FileWithoutTrailingEnter', 'can_seek', 'get_size', 'sendfile')
 
 

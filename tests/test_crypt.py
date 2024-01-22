@@ -22,8 +22,7 @@ from base64 import b64decode
 from io import BytesIO
 from unittest import TestCase
 
-from pstorelib.crypt import (
-    CryptoReader, CryptoWriter, PStoreCrypt, decrypts, encrypts)
+from pstorelib.crypt import CryptoReader, CryptoWriter, PStoreCrypt
 
 
 class Test(TestCase):
@@ -138,3 +137,38 @@ class Test(TestCase):
         reader = CryptoReader(fp=fp1, enctype='gpg')
         decfp = reader.decrypt_with()
         self.assertEqual(decfp.read(), source)
+
+
+def decrypts(encrypted, type):
+    """
+    Decrypt ``encrypted`` (a ``str`` (byte string) instance containing
+    encrypted data) to a bytestring.
+
+    Encryption type ``type`` must be 'gpg'.
+
+    Called ``decrypts`` and not ``decrypt`` because of its similarity with
+    ``pickle.loads()`` which also takes a byte string.
+
+    Can raise a ``CryptError``.
+
+    NOTE: This function is not used by pstore at the moment. But it exists to
+    complement encrypts which is used.
+    """
+    obj = CryptoReader(data=encrypted, enctype=type)
+    file = obj.decrypt_with()
+    return file.read()
+
+
+def encrypts(unencrypted, public_key):
+    """
+    Encrypt ``unencrypted`` (a ``str`` (byte string) instance) as a byte string
+    using ``public_key`` as public key.
+
+    The ``public_key`` must be a human readable public key of the GPG/PGP type.
+
+    Called ``encrypts`` and not ``encrypt`` because of its similarity with
+    ``pickle.dumps()`` which also returns a byte string.
+    """
+    obj = CryptoWriter(data=unencrypted)
+    file = obj.encrypt_with(public_key)
+    return file.read()
