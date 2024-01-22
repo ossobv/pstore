@@ -26,6 +26,7 @@ from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
 from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
+from django.utils.timezone import now
 from django.views.decorators.http import require_GET
 
 from pstorelib.server import urlunquote
@@ -135,6 +136,13 @@ def get_object(request, object_identifier):
 
             result['properties'][name] = info
 
+    # Mark the selected properties+object as read.
+    tznow = now()
+    (Property.objects
+     .filter(id__in=property_values.keys())
+     .update(read_at=tznow))
+    Object.objects.filter(id=obj.id).update(read_at=tznow)
+
     return JsonResponse(result)
 
 
@@ -225,10 +233,12 @@ def search_properties(request):
     # Fetch extra properties we need:
     qs = qs.extra(select={'size': 'LENGTH(value)'})
     qs = qs.select_related('object')
-    qs = qs.values_list('id', 'object__identifier', 'name', 'type', 'size')
+    qs = qs.values_list(
+        'id', 'object__id', 'object__identifier', 'name', 'type', 'size')
 
     machines = {}
-    for id_, identifier, propkey, proptype, size in qs:
+    results = list(qs)
+    for id_, object_id, identifier, propkey, proptype, size in results:
         propvalue = None
         if proptype == Property.TYPE_PUBLIC and size <= 2048:
             propvalue = (Property.objects.filter(id=id_)
@@ -245,6 +255,18 @@ def search_properties(request):
         if identifier not in machines:
             machines[identifier] = {'properties': {}}
         machines[identifier]['properties'][propkey] = info
+
+    # It would be a security hole if we did not set read_at here. But the
+    # usability is limited. We only did search the value__icontains if
+    # propvalue_icontains was set, and then we only see TYPE_PUBLIC.
+    if 'propvalue_icontains' in request.GET:
+        tznow = now()
+        (Property.objects
+         .filter(id__in=[pv[0] for pv in results])
+         .update(read_at=tznow))
+        (Object.objects
+         .filter(id__in=set([pv[1] for pv in results]))
+         .update(read_at=tznow))
 
     return JsonResponse(machines)
 

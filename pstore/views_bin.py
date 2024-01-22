@@ -29,6 +29,7 @@ from django.db import connection
 from django.db.models import Q
 from django.http import Http404
 from django.shortcuts import get_object_or_404
+from django.utils.timezone import now
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_POST
 
@@ -71,8 +72,9 @@ def create_property(object, property, file, user):
                 'We expected to read %d bytes at once from %s. We only got '
                 '%d bytes.' % (file.size, file.name, len(data))))
 
-    prop = Property.objects.create(object=object, name=property,
-                                   type=ptype, value=data, user=user)
+    prop = Property.objects.create(
+        object=object, name=property,
+        type=ptype, value=data, user=user)
 
     # If tempname then we've only written a dummy value thusfar. Update it
     # to the real value.
@@ -154,7 +156,7 @@ def create_nonce(request):
     user = get_object_or_403(User, username=u)
 
     # Prune old nonces.. might as well do that here.
-    old = datetime.now() - timedelta(seconds=Nonce.MAX_AGE)
+    old = now() - timedelta(seconds=Nonce.MAX_AGE)
     Nonce.objects.filter(created__lt=old).delete()
 
     # Check whether this user has created enough nonces already.
@@ -211,10 +213,15 @@ def get_property(request, object_identifier, property_name):
         raise PermissionDenied('Not staff or not permitted')
 
     if len(items) > 1:
-        class_ = Property.MultipleObjectsReturned
-        raise class_('get() returned more than one Property. Lookup parameters'
-                     ' were %r' % ({'object': object_identifier,
-                                    'name': property_name},))
+        raise Property.MultipleObjectsReturned(
+            'get() returned more than one Property. Lookup parameters'
+            ' were %r' % {
+                'object': object_identifier, 'name': property_name})
+
+    # Mark the property+object as read.
+    tznow = now()
+    qs.update(read_at=tznow)
+    Object.objects.filter(id=items[0].object_id).update(read_at=tznow)
 
     # TODO: if the value is really large, we should somehow write it to disk
     # before passing it around.
@@ -319,7 +326,7 @@ def set_property(request, object_identifier, property_name):
             # LOG: switching property from shared to public
             pass
 
-    # Purge the old properties..
+    # Purge any old properties..
     Property.objects.filter(object=obj, name=property_name).delete()
     # ... and create new ones.
     for file in request.FILES.getlist(property_name):

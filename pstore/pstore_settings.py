@@ -30,7 +30,7 @@ from logging.handlers import SysLogHandler
 
 # We're in UTC+1, we speak English and we don't do any i18n.
 TIME_ZONE, LANGUAGE_CODE = 'Europe/Amsterdam', 'en-us'
-USE_I18N, USE_TZ = False, False
+USE_I18N, USE_TZ = False, True
 
 # Currently only used for admin-media, relative to STATIC_URL: /static/admin/
 STATIC_URL = '/static/'

@@ -18,7 +18,6 @@ Copyright (C) 2010,2012,2013,2015,2017  Walter Doekes <wdoekes>, OSSO B.V.
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307,
     USA.
 """
-from datetime import datetime
 from random import getrandbits
 
 from django.contrib.auth.models import User
@@ -26,6 +25,7 @@ from django.core.validators import RegexValidator
 from django.db import models
 from django.db.models.signals import pre_delete
 from django.utils.translation import gettext_lazy as _
+from django.utils.timezone import now
 
 from pstorelib.crypt import CryptoWriter
 from pstorelib.exceptions import CryptError
@@ -150,6 +150,7 @@ class Object(Model):
     """
     identifier = models.CharField(
         max_length=255, unique=True, validators=[ascii_validator])
+    read_at = models.DateTimeField(default=None, blank=True, null=True)
 
     class Meta:
         permissions = (
@@ -219,6 +220,8 @@ class Property(ValidationMixin, models.Model):
     user = models.ForeignKey(
         User, blank=True, null=True, default=None, on_delete=models.CASCADE)
 
+    read_at = models.DateTimeField(default=None, blank=True, null=True)
+
     class Meta:
         unique_together = ('object', 'name', 'user')
         verbose_name = _('property')
@@ -282,7 +285,7 @@ class Nonce(ValidationMixin, models.Model):
         return b64_min_length <= len(value) <= b64_max_length
 
     def is_expired(self):
-        diff = datetime.now() - self.created
+        diff = now() - self.created
         try:
             diff = diff.total_seconds()
         except AttributeError:  # python2.6-
