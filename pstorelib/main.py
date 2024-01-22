@@ -37,10 +37,6 @@ from pstorelib.exceptions import (PStoreException, UserError, NotAllowed,
 from pstorelib.server import Backend
 
 
-# Optional. If they don't exist, you won't notice their features.
-SSH_ASKPASS_APP = '/usr/local/bin/ssh_echopass'
-SSH_ASKPASS_PRELOAD = '/usr/local/lib/ssh_askpass.so'
-
 ALPHA = ('ABCDEFGHIJKLMNOPQRSTUVWXYZ'
          'abcdefghijklmnopqrstuvwxyz')
 NUM = '0123456789'
@@ -354,30 +350,6 @@ def parse_options(args):
         elif option in ('--verbose', '-v'):
             config['verbose'] = True
 
-        # Evil hacks to allow the password input into ssh directly
-        elif option in ('-l',):
-            # XXX: move this to the ssh_host_hack bit..? or rename ssh_host to
-            # ssh_arg or something..
-            # Assume args[1] is the machine name here
-            machine_name = args[1]
-            # "x" (or "-") => use machine_name
-            if arg in ('-', 'x') and len(args) > 1:
-                config['ssh_host'] = machine_name
-            # "username" => use username@machine_name
-            elif '.' not in arg:
-                config['ssh_host'] = arg + '@' + machine_name
-            # "host-part." => use host-part.machine-domain"
-            elif arg.endswith('.'):
-                config['ssh_host'] = arg + machine_name.split('.', 1)[-1]
-            # "whatever-else" => use "whatever-else"
-            else:
-                config['ssh_host'] = arg
-            del machine_name
-            print('Attempting ssh login with arg: {0}'.format(
-                config['ssh_host']))
-            print('(if you see "Host key verification failed", '
-                  'you need to ssh manually)')
-
         else:
             raise NotImplementedError('Unhandled option', option)
 
@@ -523,8 +495,7 @@ def run_command(command, args, config):
                 # a 403 instead. Catch both.
                 pass
             else:
-                run_show_password(machine_info, machine_password,
-                                  ssh_host_hack=config.get('ssh_host', None))
+                run_show_password(machine_info, machine_password)
                 found_machine = True
 
         # If there was no name, or the name wasn't a machine, do a listing.
@@ -595,7 +566,7 @@ def run_command(command, args, config):
         raise NotImplementedError('Unknown command', command)
 
 
-def run_show_password(machine_info, machine_password, ssh_host_hack=None):
+def run_show_password(machine_info, machine_password):
     # FIXME FIXME FIXME
     # machine_password should be in some kind of mutable XORed form,
     # so it doesn't easily show up in memory dumps
@@ -606,39 +577,8 @@ def run_show_password(machine_info, machine_password, ssh_host_hack=None):
     # Er.. why do we assume that the user wants all this on his screen?
     silenced_sigpipe(print_result_related_properties, machine_info)
 
-    if ssh_host_hack:
-        # Run ssh
-        run_ssh_host_hack(ssh_host_hack)
-    else:
-        # Show password
-        silenced_sigpipe(print_result_password, machine_password)
-
-
-def run_ssh_host_hack(machine_password, ssh_host_hack):
-    if 'DISPLAY' not in os.environ:
-        os.environ['DISPLAY'] = 'whatever:0'
-    os.environ['LD_PRELOAD'] = SSH_ASKPASS_PRELOAD
-    os.environ['SSH_ASKPASS'] = SSH_ASKPASS_APP
-    os.environ['SSH_PASSWORD'] = mktemp()
-    # Not really secure.. using the filesystem.. but it'll have
-    # to do for now..
-    temp = open(os.environ['SSH_PASSWORD'], 'w')
-    try:
-        temp.write(machine_password)
-    finally:
-        temp.close()
-        del temp
-    try:
-        os.execve('/usr/bin/ssh',
-                  ['ssh', '-oPubkeyAuthentication=no', ssh_host_hack],
-                  os.environ)
-    finally:
-        # We don't usually get here, but if we do, make sure we clean up
-        # the password.
-        temp = open(os.environ['SSH_PASSWORD'], 'w')
-        temp.write('X' * 1024)
-        temp.close()
-        os.unlink(os.environ['SSH_PASSWORD'])
+    # Show password
+    silenced_sigpipe(print_result_password, machine_password)
 
 
 def silenced_sigpipe(callable, *args, **kwargs):
@@ -764,13 +704,8 @@ def print_result_search(properties, config):
 
 
 def run_usage(verbose=False):
-    # Check if we can use the evil ssh auto-login.
-    evil_ssh_hacks = os.path.exists(SSH_ASKPASS_PRELOAD)
-
     # Select verbosity.
-    if verbose and evil_ssh_hacks:
-        matcher = (lambda i: i in (0, 1, 2))
-    elif verbose:
+    if verbose:
         matcher = (lambda i: i in (0, 1))
     else:
         matcher = (lambda i: i in (0,))
@@ -787,8 +722,6 @@ def run_usage(verbose=False):
          'Look up machine names only (*L)'),
         ('  --propedit=A, -p A    ', 1,
          'Act on properties; list/get/set/encrypt (*P)'),
-        ('  -l [x|SSH_ARG]        ', 2,
-         'Evil hack to ssh(1) to machine directly (*S)'),
         ('  --consistency-check   ', 1,
          'Check database consistency (*C)'),
     )
@@ -820,11 +753,6 @@ def run_usage(verbose=False):
                   '\n(*L) For bash completion. Will never ask for a password.'
                   '\n(*P) Use one of -pl, -pg, -ps, -pe, where -pe is the '
                   'encrypted -ps.')
-    if matcher(2):
-        extra += ('\n(*S) SSH_ARG can be one of "username", '
-                  '"[username@]replace-host.",\n'
-                  '    "[username@]entire-host.name". '
-                  'Requires ssh_askpass.so.')
     if extra:
         extra = '\n' + extra
 
