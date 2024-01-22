@@ -94,24 +94,9 @@ class PStoreInterface(object):
                                         allowed_only=allowed_only,
                                         verbose=verbose)
 
-    def get_password(self, identifier):
+    def get_object(self, identifier):
         # Get object.
-        object = self.backend.get_object(identifier)
-        # The object fetched is already quite verbose. The password might be
-        # in there already.
-        property = self.PASSWORD_PROPERTY
-        try:
-            info = object['properties'][property]     # KeyError if not
-            decrypt_with = info['data'].decrypt_with  # AttributeError if None
-        except (AttributeError, KeyError):
-            fp = self.propget(identifier, property)
-        else:
-            if info['enctype'] == 'none':
-                sys.stderr.write('WARNING: password as public property?\n')
-            fp = decrypt_with()
-
-        password = fp.read()
-        return password, object
+        return self.backend.get_object(identifier)
 
     def get_properties(self, objectid, allowed_only=True):
         '''Get the available properties, possibly with contents.'''
@@ -145,7 +130,7 @@ class PStoreInterface(object):
         for property, info in object['properties'].items():
             if info['enctype'] == 'none':
                 continue
-            properties[property] = self.propget(
+            properties[property], enctype = self.propget(
                 objectid, property.encode('ascii'))
 
         # FIXME: there should be a way to denote that we are not updating the
@@ -455,14 +440,24 @@ def run_command(command, args, config):
 
     elif command == 'propget':
         # TODO: Add the possibility to replace stdout with a file..
-        fp = pstore.propget(name, property)
+        fp, enctype = pstore.propget(name, property)
+
+        lead = tail = b''
+        if hasattr(os, 'isatty') and os.isatty(sys.stdout.fileno()):
+            # We dropped the last line feed on input from a TTY. So, if
+            # the output is a tty too, we'll add the LF again.
+            if enctype == 'none' or config['verbose']:
+                tail = b'\n'
+            else:
+                # ansi color the password so it's less visible
+                # TODO: invert this if the console is not white-on-black?
+                lead, tail = b'\x1b[7;30m', b'\x1b[0m\n'
+
         # Use a sendfile(2) compatible call to push everything from the fp to
         # stdout.
+        silenced_sigpipe(bytes_stdout.write, lead)
         silenced_sigpipe(sendfile, bytes_stdout, fp)
-        # We dropped the last line feed on input from a TTY. So, if the output
-        # is a tty too, we'll add the LF again.
-        if sys.stdout.isatty():
-            sys.stdout.write('\n')
+        silenced_sigpipe(bytes_stdout.write, tail)
 
     elif command == 'proplist':
         allowed_only = (not config['show_all'])
@@ -488,13 +483,14 @@ def run_command(command, args, config):
 
         if name:
             try:
-                machine_password, machine_info = pstore.get_password(name)
+                properties = pstore.get_object(name)
             except (NotAllowed, NotFound):
                 # A superadmin gets a 404 on no-such-object. A mere mortal gets
                 # a 403 instead. Catch both.
                 pass
             else:
-                run_show_password(machine_info, machine_password)
+                silenced_sigpipe(
+                    print_result_properties_and_values, properties)
                 found_machine = True
 
         # If there was no name, or the name wasn't a machine, do a listing.
@@ -565,21 +561,6 @@ def run_command(command, args, config):
         raise NotImplementedError('Unknown command', command)
 
 
-def run_show_password(machine_info, machine_password):
-    # FIXME FIXME FIXME
-    # machine_password should be in some kind of mutable XORed form,
-    # so it doesn't easily show up in memory dumps
-    # note that the memory is already exposed earlier on.. go back and fix
-    # it there too.
-    # FIXME FIXME FIXME
-
-    # Er.. why do we assume that the user wants all this on his screen?
-    silenced_sigpipe(print_result_related_properties, machine_info)
-
-    # Show password
-    silenced_sigpipe(print_result_password, machine_password)
-
-
 def silenced_sigpipe(callable, *args, **kwargs):
     try:
         ret = callable(*args, **kwargs)
@@ -626,14 +607,6 @@ def print_results_list(machines):
             ', '.join(sorted(properties['users'].keys()))))
 
 
-def print_result_password(machine_password):
-    if hasattr(os, 'isatty') and os.isatty(sys.stdout.fileno()):
-        # ansi color the password so it's less visible
-        # TODO: invert this if the console is not white-on-black
-        machine_password = b'\x1b[7;30m%s\x1b[0m' % (machine_password,)
-    bytes_stdout.write(b'password = %s\n' % (machine_password,))
-
-
 def print_result_properties(properties, config):
     if config['verbose']:
         for property in sorted(properties.keys()):
@@ -652,10 +625,8 @@ def print_results_property_keys(properties):
         print(objectid)
 
 
-def print_result_related_properties(machine_info):
+def print_result_properties_and_values(machine_info):
     for property in sorted(machine_info['properties'].keys()):
-        if property == PStoreInterface.PASSWORD_PROPERTY:
-            continue  # do that one last..
         info = machine_info['properties'][property]
         if info['enctype'] == 'none':
             if info['data'] is not None:

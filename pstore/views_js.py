@@ -83,17 +83,14 @@ def get_object(request, object_identifier):
     propqs = propqs.extra(select={'size': 'LENGTH(value)'})
     properties = set(propqs.values_list('id', 'name', 'type', 'size', 'user'))
 
-    # Get the values, but only for small properties.
-    small_property_ids = [i[0] for i in properties if i[3] <= 2048]
-
-    # https://code.djangoproject.com/ticket/9619
-    # We cannot do values_list when using SQLite3.
-    # #property_values = dict(Property.objects
-    # #                       .filter(id__in=small_property_ids)
-    # #                       .values_list('id', 'value'))
-    property_qs = Property.objects.filter(id__in=small_property_ids)
-    property_values = dict((i.id, i.value)
-                           for i in property_qs.only('id', 'value'))
+    # Get the values, but only for small properties that have the shared
+    # (unencrypted) property type.
+    selected_property_ids = [
+        i[0] for i in properties
+        if i[2] == Property.TYPE_PUBLIC and i[3] <= 2048]
+    property_values = dict(
+        Property.objects.filter(id__in=selected_property_ids)
+        .values_list('id', 'value'))
 
     # Put properties in the results dictionary.
     result['properties'] = {}

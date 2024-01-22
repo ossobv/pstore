@@ -69,7 +69,7 @@ class Backend(object):
         path = '/propget/%s/%s.bin' % (urlquote(objectid), urlquote(property))
         out = {u'nonce_b64': self.newnonce(), 'u': self.user}
         reader = self._communicate(path, query=out)
-        return reader.decrypt_with()
+        return reader.decrypt_with(), reader.enctype
 
     def propset(self, objectid, property, files=None, o_excl=False):
         assert files
