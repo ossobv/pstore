@@ -1,7 +1,7 @@
 # vim: set ts=8 sw=4 sts=4 et ai tw=79:
 """
 pstore-lib -- Python Protected Password Store (Library)
-Copyright (C) 2013,2015,2017,2018  Walter Doekes <wdoekes>, OSSO B.V.
+Copyright (C) 2013,2015,2017,2018,2024  Walter Doekes <wdoekes>, OSSO B.V.
 
     This library is free software; you can redistribute it and/or modify it
     under the terms of the GNU Lesser General Public License as published by
@@ -18,36 +18,136 @@ Copyright (C) 2013,2015,2017,2018  Walter Doekes <wdoekes>, OSSO B.V.
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307,
     USA.
 
-The code herein is mostly taken from python-pgpdump by DanMcGee, which in turn
-is derived from 'pgpdump' by Kazuhiko Yamamoto.
+The code herein is mostly taken from python-pgpdump by Fuyukai, derived from
+python-pgpdump by DanMcGee, which in turn is derived from 'pgpdump' by Kazuhiko
+Yamamoto.
 
+https://pypi.org/project/pgpdump3/1.5.2 (https://github.com/SkierPGP)
 https://pypi.python.org/pypi/pgpdump/1.3
 http://www.mew.org/~kazu/proj/pgpdump/
 
-It is trimmed down to only return the PGP key id.
+It is trimmed down to only return the PGP PublicKeyPacket packets, from which
+we need the PGP key id.
+(Also improved performance of some int/binary functions.)
 """
 import hashlib
 from base64 import b64decode
-from struct import unpack
+from datetime import datetime, timedelta
+from math import ceil, log
 
 
 __all__ = ('AsciiData', 'BinaryData')
 
 
-def get_int(data, offset, size):
-    letter = {1: 'B', 2: 'H', 4: 'I', 8: 'Q'}[size]
-    binary = data[offset:(offset + size)]
-    try:
-        integer = unpack('>%s' % (letter,), binary)[0]
-    except Exception:
-        raise Exception('unpack failed on %r' % (binary,))
-    return integer
+class PgpdumpException(ValueError):
+    """
+    Base exception class raised by any parsing errors, etc.
+    """
+    pass
 
 
-def my_ord(byte):
-    if not isinstance(byte, int):
-        byte = ord(byte)
-    return byte
+# 256 values corresponding to each possible byte
+CRC24_TABLE = (
+    0x000000, 0x864cfb, 0x8ad50d, 0x0c99f6, 0x93e6e1, 0x15aa1a, 0x1933ec,
+    0x9f7f17, 0xa18139, 0x27cdc2, 0x2b5434, 0xad18cf, 0x3267d8, 0xb42b23,
+    0xb8b2d5, 0x3efe2e, 0xc54e89, 0x430272, 0x4f9b84, 0xc9d77f, 0x56a868,
+    0xd0e493, 0xdc7d65, 0x5a319e, 0x64cfb0, 0xe2834b, 0xee1abd, 0x685646,
+    0xf72951, 0x7165aa, 0x7dfc5c, 0xfbb0a7, 0x0cd1e9, 0x8a9d12, 0x8604e4,
+    0x00481f, 0x9f3708, 0x197bf3, 0x15e205, 0x93aefe, 0xad50d0, 0x2b1c2b,
+    0x2785dd, 0xa1c926, 0x3eb631, 0xb8faca, 0xb4633c, 0x322fc7, 0xc99f60,
+    0x4fd39b, 0x434a6d, 0xc50696, 0x5a7981, 0xdc357a, 0xd0ac8c, 0x56e077,
+    0x681e59, 0xee52a2, 0xe2cb54, 0x6487af, 0xfbf8b8, 0x7db443, 0x712db5,
+    0xf7614e, 0x19a3d2, 0x9fef29, 0x9376df, 0x153a24, 0x8a4533, 0x0c09c8,
+    0x00903e, 0x86dcc5, 0xb822eb, 0x3e6e10, 0x32f7e6, 0xb4bb1d, 0x2bc40a,
+    0xad88f1, 0xa11107, 0x275dfc, 0xdced5b, 0x5aa1a0, 0x563856, 0xd074ad,
+    0x4f0bba, 0xc94741, 0xc5deb7, 0x43924c, 0x7d6c62, 0xfb2099, 0xf7b96f,
+    0x71f594, 0xee8a83, 0x68c678, 0x645f8e, 0xe21375, 0x15723b, 0x933ec0,
+    0x9fa736, 0x19ebcd, 0x8694da, 0x00d821, 0x0c41d7, 0x8a0d2c, 0xb4f302,
+    0x32bff9, 0x3e260f, 0xb86af4, 0x2715e3, 0xa15918, 0xadc0ee, 0x2b8c15,
+    0xd03cb2, 0x567049, 0x5ae9bf, 0xdca544, 0x43da53, 0xc596a8, 0xc90f5e,
+    0x4f43a5, 0x71bd8b, 0xf7f170, 0xfb6886, 0x7d247d, 0xe25b6a, 0x641791,
+    0x688e67, 0xeec29c, 0x3347a4, 0xb50b5f, 0xb992a9, 0x3fde52, 0xa0a145,
+    0x26edbe, 0x2a7448, 0xac38b3, 0x92c69d, 0x148a66, 0x181390, 0x9e5f6b,
+    0x01207c, 0x876c87, 0x8bf571, 0x0db98a, 0xf6092d, 0x7045d6, 0x7cdc20,
+    0xfa90db, 0x65efcc, 0xe3a337, 0xef3ac1, 0x69763a, 0x578814, 0xd1c4ef,
+    0xdd5d19, 0x5b11e2, 0xc46ef5, 0x42220e, 0x4ebbf8, 0xc8f703, 0x3f964d,
+    0xb9dab6, 0xb54340, 0x330fbb, 0xac70ac, 0x2a3c57, 0x26a5a1, 0xa0e95a,
+    0x9e1774, 0x185b8f, 0x14c279, 0x928e82, 0x0df195, 0x8bbd6e, 0x872498,
+    0x016863, 0xfad8c4, 0x7c943f, 0x700dc9, 0xf64132, 0x693e25, 0xef72de,
+    0xe3eb28, 0x65a7d3, 0x5b59fd, 0xdd1506, 0xd18cf0, 0x57c00b, 0xc8bf1c,
+    0x4ef3e7, 0x426a11, 0xc426ea, 0x2ae476, 0xaca88d, 0xa0317b, 0x267d80,
+    0xb90297, 0x3f4e6c, 0x33d79a, 0xb59b61, 0x8b654f, 0x0d29b4, 0x01b042,
+    0x87fcb9, 0x1883ae, 0x9ecf55, 0x9256a3, 0x141a58, 0xefaaff, 0x69e604,
+    0x657ff2, 0xe33309, 0x7c4c1e, 0xfa00e5, 0xf69913, 0x70d5e8, 0x4e2bc6,
+    0xc8673d, 0xc4fecb, 0x42b230, 0xddcd27, 0x5b81dc, 0x57182a, 0xd154d1,
+    0x26359f, 0xa07964, 0xace092, 0x2aac69, 0xb5d37e, 0x339f85, 0x3f0673,
+    0xb94a88, 0x87b4a6, 0x01f85d, 0x0d61ab, 0x8b2d50, 0x145247, 0x921ebc,
+    0x9e874a, 0x18cbb1, 0xe37b16, 0x6537ed, 0x69ae1b, 0xefe2e0, 0x709df7,
+    0xf6d10c, 0xfa48fa, 0x7c0401, 0x42fa2f, 0xc4b6d4, 0xc82f22, 0x4e63d9,
+    0xd11cce, 0x575035, 0x5bc9c3, 0xdd8538
+)
+
+
+def crc24(data):
+    """
+    Implementation of the CRC-24 algorithm used by OpenPGP.
+    """
+    # CRC-24-Radix-64
+    # x24 + x23 + x18 + x17 + x14 + x11 + x10 + x7 + x6
+    #   + x5 + x4 + x3 + x + 1 (OpenPGP)
+    # 0x864CFB / 0xDF3261 / 0xC3267D
+    crc = 0x00b704ce
+    # this saves a bunch of slower global accesses
+    crc_table = CRC24_TABLE
+    for byte in data:
+        tbl_idx = ((crc >> 16) ^ byte) & 0xff
+        crc = (crc_table[tbl_idx] ^ (crc << 8)) & 0x00ffffff
+    return crc
+
+
+def get_hex_data(data, offset, byte_count):
+    """
+    Pull the given number of bytes from data at offset and return as a
+    hex-encoded string.
+
+    Original (1% slower) version:
+
+        key_data = data[offset:offset + byte_count]
+        key_id = binascii.hexlify(key_data)
+        return key_id.upper()
+    """
+    key_data = data[offset:offset + byte_count]
+    return key_data.hex().encode().upper()
+
+
+def get_int2(data, offset):
+    """
+    Pull two bytes from data at offset and return as an integer.
+    """
+    return (data[offset] << 8) + data[offset + 1]
+
+
+def get_int4(data, offset):
+    """
+    Pull four bytes from data at offset and return as an integer.
+    """
+    return ((data[offset] << 24) + (data[offset + 1] << 16)
+            + (data[offset + 2] << 8) + data[offset + 3])
+
+
+def get_int_bytes(data):
+    """
+    Get the big-endian byte form of an integer or MPI.
+
+    Original (2x slower) version:
+
+        hexval = '%X' % data
+        new_len = (len(hexval) + 1) // 2 * 2
+        hexval = hexval.zfill(new_len)
+        return binascii.unhexlify(hexval.encode('ascii'))
+    """
+    byte_length = (data.bit_length() + 7) // 8 or 1  # calc byte len
+    return data.to_bytes(byte_length, 'big')
 
 
 def get_mpi(data, offset):
@@ -55,21 +155,24 @@ def get_mpi(data, offset):
     Gets a multi-precision integer as per RFC-4880.
     Returns the MPI and the new offset.
     See: http://tools.ietf.org/html/rfc4880#section-3.2
+
+    Original (30% slower) version:
+
+        ...
+        mpi = 0
+        i = -4
+        for i in range(0, to_process - 3, 4):
+            mpi <<= 32
+            mpi += get_int4(data, offset + i)
+        for j in range(i + 4, to_process):
+            mpi <<= 8
+            mpi += data[offset + j]
+        ...
     """
-    # #return None, int((get_int(data, offset, 2) + 7) / 8) + 2
-    mpi_len = get_int(data, offset, 2)
+    mpi_len = get_int2(data, offset)
     offset += 2
     to_process = (mpi_len + 7) // 8
-    mpi = 0
-    i = -4
-    for i in range(0, to_process - 3, 4):
-        mpi <<= 32
-        mpi += get_int(data, offset + i, 4)
-    for j in range(i + 4, to_process):
-        mpi <<= 8
-        mpi += my_ord(data[offset + j])
-    # Python 3.2 and later alternative:
-    # #mpi = int.from_bytes(data[offset:offset + to_process], byteorder='big')
+    mpi = int.from_bytes(data[offset:offset + to_process], byteorder='big')
     offset += to_process
     return mpi, offset
 
@@ -83,145 +186,317 @@ class BinaryData(object):
 
     def __init__(self, data):
         if not data:
-            raise Exception("no data to parse")
+            raise PgpdumpException("no data to parse")
         if len(data) <= 1:
-            raise Exception("data too short")
+            raise PgpdumpException("data too short")
+
+        data = bytearray(data)
 
         # 7th bit of the first byte must be a 1
-        if not bool(my_ord(data[0]) & self.binary_tag_flag):
-            raise Exception("incorrect binary data")
+        if not bool(data[0] & self.binary_tag_flag):
+            raise PgpdumpException("incorrect binary data")
         self.data = data
         self.length = len(data)
 
     def packets(self):
-        packet = self.get_public_key()
-        if packet:
-            yield packet
-
-    def get_public_key(self):
         """
-        Return the public key packet.
         A generator function returning PGP data packets.
         """
         offset = 0
         while offset < self.length:
-            tag = my_ord(self.data[offset]) & 0x3f
-            new = bool(my_ord(self.data[offset]) & 0x40)
-            if new:
-                pos = offset + 1
-                data_offset, length, partial = new_tag_length(self.data, pos)
-                data_offset += 1
-            else:
-                tag >>= 2
-                data_offset, length = old_tag_length(self.data, offset)
-            data_offset += 1
-            offset += data_offset
+            total_length, packet = construct_packet(self.data, offset)
+            offset += total_length
+            yield packet
 
-            if tag == 6:
-                end = offset + length
-                packet_data = self.data[offset:end]
-                packet = PublicKeyPacket(tag, new, packet_data)
-                return packet
-
-            offset += length
-        return None
+    def __repr__(self):
+        return "<%s: length %d>" % (
+                self.__class__.__name__, self.length)
 
 
 class AsciiData(BinaryData):
+    """
+    A wrapper class that supports ASCII-armored input. It searches for the
+    first PGP magic header and extracts the data contained within.
+    """
     def __init__(self, data):
-        lines = [i.strip() for i in data.strip().split('\n')]
+        self.original_data = data
+        if not isinstance(data, bytes):
+            data = data.encode()
+        data = self.strip_magic(data)
+        data, known_crc = self.split_data_crc(data)
+        data = bytearray(b64decode(data))
+        if known_crc:
+            # verify it if we could find it
+            actual_crc = crc24(data)
+            if known_crc != actual_crc:
+                raise PgpdumpException(
+                    "CRC failure: known 0x%x, actual 0x%x" % (
+                        known_crc, actual_crc))
+        super(AsciiData, self).__init__(data)
 
-        if not lines[0].startswith('----'):  # -----BEGIN PGP PUBLIC KEY BLOCK
-            raise ValueError('missing BEGIN PGP PUBLIC KEY BLOCK')
-        lines.pop(0)
+    @staticmethod
+    def strip_magic(data):
+        """
+        Strip away the '-----BEGIN PGP SIGNATURE-----' and related cruft so
+        we can safely base64 decode the remainder.
+        """
+        idx = 0
+        magic = b'-----BEGIN PGP '
+        ignore = b'-----BEGIN PGP SIGNED '
 
-        if not lines[-1].startswith('----'):  # -----END PGP PUBLIC KEY BLOCK
-            raise ValueError('missing END PGP PUBLIC KEY BLOCK')
-        lines.pop()
+        # find our magic string, skiping our ignored string
+        while True:
+            idx = data.find(magic, idx)
+            if data[idx:len(ignore)] != ignore:
+                break
+            idx += 1
 
-        # Drop optional checksum that starts with '='.
-        if lines[-1].startswith('='):
-            lines.pop()
+        if idx >= 0:
+            # find the start of the actual data. it always immediately follows
+            # a blank line, meaning headers are done.
+            nl_idx = data.find(b'\n\n', idx)
+            if nl_idx < 0:
+                nl_idx = data.find(b'\r\n\r\n', idx)
+            if nl_idx < 0:
+                raise PgpdumpException(
+                        "found magic, could not find start of data")
+            # now find the end of the data.
+            end_idx = data.find(b'-----', nl_idx)
+            if end_idx:
+                data = data[nl_idx:end_idx]
+            else:
+                data = data[nl_idx:]
+        return data
 
-        # Drop optional headers before the actual data.
-        # E.g. "Version: GnuPG v1.4.11 (GNU/Linux)"
-        if '' in lines:
-            while lines[0] != '':
-                lines.pop(0)
-            lines.pop(0)
-        # Should be only once.
-        if '' in lines:
-            raise ValueError('excess LF in public key block?')
+    @staticmethod
+    def split_data_crc(data):
+        """
+        The Radix-64 format appends any CRC checksum to the end of the data
+        block, in the form '=alph', where there are always 4 ASCII characters
+        corresponding to 3 digits (24 bits). Look for this special case.
+        """
+        # don't let newlines trip us up
+        data = data.rstrip()
+        # this funkyness makes it work without changes in Py2 and Py3
+        if data[-5] in (b'=', ord(b'=')):
+            # CRC is returned without the = and converted to a decimal
+            crc = b64decode(data[-4:])
+            # same noted funkyness as above, due to bytearray implementation
+            crc = [ord(c) if isinstance(c, str) else c for c in crc]
+            crc = (crc[0] << 16) + (crc[1] << 8) + crc[2]
+            return (data[:-5], crc)
+        return (data, None)
 
-        data = ''.join(i.strip() for i in lines)
-        decoded = b64decode(data)
-        super(AsciiData, self).__init__(decoded)
 
+class Packet(object):
+    """
+    The base packet object containing various fields pulled from the packet
+    header as well as a slice of the packet data.
+    """
 
-class PublicKeyPacket(object):
-    def __init__(self, raw, new, data):
+    def __init__(self, raw, name, new, data, original_data):
         self.raw = raw
+        self.name = name
         self.new = new
         self.length = len(data)
         self.data = data
+        self.original_data = original_data
 
-        self.pubkey_version = None
-        self.key_id = None
-        self.raw_pub_algorithm = None
-        self.pub_algorithm_type = None
-        self.modulus = None
-        self.exponent = None
-        self.prime = None
-
+        # now let subclasses work their magic
         self.parse()
 
     def parse(self):
-        self.pubkey_version = my_ord(self.data[0])
+        """
+        Perform any parsing necessary to populate fields on this packet.
+        This method is called as the last step in __init__(). The base class
+        method is a no-op; subclasses should use this as required.
+        """
+        return 0
+
+    def __repr__(self):
+        new = "old"
+        if self.new:
+            new = "new"
+        return "<%s: %s (%d), %s, length %d>" % (
+            self.__class__.__name__, self.name, self.raw, new, self.length)
+
+
+class AlgoLookup(object):
+    """
+    Mixin class containing algorithm lookup methods.
+    """
+    pub_algorithms = {
+        1: "RSA Encrypt or Sign",
+        2: "RSA Encrypt-Only",
+        3: "RSA Sign-Only",
+        16: "ElGamal Encrypt-Only",
+        17: "DSA Digital Signature Algorithm",
+        18: "Elliptic Curve",
+        19: "ECDSA",
+        20: "Formerly ElGamal Encrypt or Sign",
+        21: "Diffie-Hellman",
+    }
+
+    # OID stuff? Not sure if it should be here, but why not?
+    # TODO: Add more OIDS.
+    oids = {
+        b'2B81040023': ("NIST P-521", 521),
+        b'2B81040022': ("NIST P-384", 384),
+        b'2A8648CE3D030107': ("NIST P-256", 256),
+        b'2B240303020801010D': ("Brainpool P512 r1", 512),
+        b'2B240303020801010B': ("Brainpool P384 r1", 384),
+        b'2B2403030208010107': ("Brainpool P256 r1", 256),
+        b'2B06010401DA470F01': ("Curve 25519", None)
+    }
+
+    @classmethod
+    def lookup_pub_algorithm(cls, alg):
+        if 100 <= alg <= 110:
+            return "Private/Experimental algorithm"
+        return cls.pub_algorithms.get(alg, "Unknown")
+
+    @classmethod
+    def lookup_oid(cls, oid):
+        return cls.oids.get(oid, ("Unknown", None))
+
+    hash_algorithms = {
+        1: "MD5",
+        2: "SHA1",
+        3: "RIPEMD160",
+        8: "SHA256",
+        9: "SHA384",
+        10: "SHA512",
+        11: "SHA224",
+    }
+
+    @classmethod
+    def lookup_hash_algorithm(cls, alg):
+        # reserved values check
+        if alg in (4, 5, 6, 7):
+            return "Reserved"
+        if 100 <= alg <= 110:
+            return "Private/Experimental algorithm"
+        return cls.hash_algorithms.get(alg, "Unknown")
+
+    sym_algorithms = {
+        # (Name, IV length)
+        0: ("Plaintext or unencrypted", 0),
+        1: ("IDEA", 8),
+        2: ("Triple-DES", 8),
+        3: ("CAST5", 8),
+        4: ("Blowfish", 8),
+        5: ("Reserved", 8),
+        6: ("Reserved", 8),
+        7: ("AES with 128-bit key", 16),
+        8: ("AES with 192-bit key", 16),
+        9: ("AES with 256-bit key", 16),
+        10: ("Twofish with 256-bit key", 16),
+        11: ("Camellia with 128-bit key", 16),
+        12: ("Camellia with 192-bit key", 16),
+        13: ("Camellia with 256-bit key", 16),
+    }
+
+    @classmethod
+    def _lookup_sym_algorithm(cls, alg):
+        return cls.sym_algorithms.get(alg, ("Unknown", 0))
+
+    @classmethod
+    def lookup_sym_algorithm(cls, alg):
+        return cls._lookup_sym_algorithm(alg)[0]
+
+    @classmethod
+    def lookup_sym_algorithm_iv(cls, alg):
+        return cls._lookup_sym_algorithm(alg)[1]
+
+
+class PublicKeyPacket(Packet, AlgoLookup):
+    def __init__(self, *args, **kwargs):
+        self.pubkey_version = None
+        self.fingerprint = None
+        self.key_id = None
+        self.raw_creation_time = None
+        self.creation_time = None
+        self.raw_days_valid = None
+        self.expiration_time = None
+        self.raw_pub_algorithm = None
+        self.pub_algorithm_type = None
+        self.modulus = None
+        self.modulus_bitlen = None
+        self.exponent = None
+        self.prime = None
+        self.group_order = None
+        self.group_gen = None
+        self.key_value = None
+
+        self.bitlen = None
+
+        # ECC information
+        self.raw_oid = None
+        self.raw_oid_length = None
+
+        self.oid = None
+
+        super(PublicKeyPacket, self).__init__(*args, **kwargs)
+
+    def parse(self):
+        self.pubkey_version = self.data[0]
         offset = 1
         if self.pubkey_version in (2, 3):
-            offset += 4  # raw_creation_time
-            offset += 2  # days_valid
+            self.raw_creation_time = get_int4(self.data, offset)
+            self.creation_time = datetime.utcfromtimestamp(
+                self.raw_creation_time)
+            offset += 4
 
-            self.raw_pub_algorithm = my_ord(self.data[offset])
+            self.raw_days_valid = get_int2(self.data, offset)
+            offset += 2
+            if self.raw_days_valid > 0:
+                self.expiration_time = self.creation_time + timedelta(
+                    days=self.raw_days_valid)
+
+            self.raw_pub_algorithm = self.data[offset]
             offset += 1
-            offset = self.parse_key_material(offset)
 
-            # #md5 = hashlib.md5()
+            offset = self.parse_key_material(offset)
+            md5 = hashlib.md5()
             # Key type must be RSA for v2 and v3 public keys
             if self.pub_algorithm_type == "rsa":
                 key_id = ('%X' % self.modulus)[-8:].zfill(8)
                 self.key_id = key_id.encode('ascii')
-                # #md5.update(get_int_bytes(self.modulus))
-                # #md5.update(get_int_bytes(self.exponent))
+                md5.update(get_int_bytes(self.modulus))
+                md5.update(get_int_bytes(self.exponent))
             elif self.pub_algorithm_type == "elg":
                 # Of course, there are ELG keys in the wild too. This formula
                 # for calculating key_id and fingerprint is derived from an old
                 # key and there is a test case based on it.
                 key_id = ('%X' % self.prime)[-8:].zfill(8)
                 self.key_id = key_id.encode('ascii')
-                # #md5.update(get_int_bytes(self.prime))
-                # #md5.update(get_int_bytes(self.group_gen))
+                md5.update(get_int_bytes(self.prime))
+                md5.update(get_int_bytes(self.group_gen))
             else:
-                raise Exception(
-                    "Invalid non-RSA v%d public key" % self.pubkey_version)
-            # #self.fingerprint = md5.hexdigest().upper().encode('ascii')
+                raise PgpdumpException("Invalid non-RSA v%d public key" %
+                                       self.pubkey_version)
+            self.fingerprint = md5.hexdigest().upper().encode('ascii')
         elif self.pubkey_version == 4:
             sha1 = hashlib.sha1()
-            sha1.update(b'%c%c%c' % (
-                0x99, (self.length >> 8) & 0xff, self.length & 0xff))
+            seed_bytes = (0x99, (self.length >> 8) & 0xff, self.length & 0xff)
+            sha1.update(bytearray(seed_bytes))
             sha1.update(self.data)
-            fingerprint = sha1.hexdigest().upper().encode('ascii')
-            self.key_id = fingerprint[24:]
+            self.fingerprint = sha1.hexdigest().upper().encode('ascii')
+            self.key_id = self.fingerprint[24:]
 
-            offset += 4  # raw_creation_time
-            self.raw_pub_algorithm = my_ord(self.data[offset])
+            self.raw_creation_time = get_int4(self.data, offset)
+            self.creation_time = datetime.utcfromtimestamp(
+                self.raw_creation_time)
+            offset += 4
+
+            self.raw_pub_algorithm = self.data[offset]
             offset += 1
 
             offset = self.parse_key_material(offset)
         else:
-            raise Exception(
-                "Unsupported public key packet, version %d" %
-                self.pubkey_version)
+            raise PgpdumpException(
+                "Unsupported public key packet, version %d" % (
+                    self.pubkey_version))
 
         return offset
 
@@ -231,6 +506,9 @@ class PublicKeyPacket(object):
             # n, e
             self.modulus, offset = get_mpi(self.data, offset)
             self.exponent, offset = get_mpi(self.data, offset)
+            # the length of the modulus in bits
+            self.modulus_bitlen = int(ceil(log(self.modulus, 2)))
+            self.bitlen = self.modulus_bitlen
         elif self.raw_pub_algorithm == 17:
             self.pub_algorithm_type = "dsa"
             # p, q, g, y
@@ -238,40 +516,94 @@ class PublicKeyPacket(object):
             self.group_order, offset = get_mpi(self.data, offset)
             self.group_gen, offset = get_mpi(self.data, offset)
             self.key_value, offset = get_mpi(self.data, offset)
+            # This isn't always accurate, but you can round to the
+            # nearest power of 2 yourself.
+            self.bitlen = int(ceil(log(self.key_value, 2)))
         elif self.raw_pub_algorithm in (16, 20):
             self.pub_algorithm_type = "elg"
             # p, g, y
             self.prime, offset = get_mpi(self.data, offset)
             self.group_gen, offset = get_mpi(self.data, offset)
             self.key_value, offset = get_mpi(self.data, offset)
+        elif self.raw_pub_algorithm == 18:
+            self.pub_algorithm_type = "ecc"
+            offset = self.parse_oid_data(offset)
+        elif self.raw_pub_algorithm == 19:
+            self.pub_algorithm_type = "ecdsa"
+            offset = self.parse_oid_data(offset)
+        elif self.raw_pub_algorithm == 22:
+            self.pub_algorithm_type = "curve25519"
+            offset = self.parse_oid_data(offset)
         elif 100 <= self.raw_pub_algorithm <= 110:
             # Private/Experimental algorithms, just move on
             pass
         else:
-            raise Exception(
-                "Unsupported public key algorithm %d" % self.raw_pub_algorithm)
+            raise PgpdumpException("Unsupported public key algorithm %d" %
+                                   self.raw_pub_algorithm)
 
         return offset
+
+    def parse_oid_data(self, offset):
+        oid_length = self.data[offset]
+        offset += 1
+
+        oid = get_hex_data(self.data, offset, oid_length)
+        offset += oid_length
+        self.raw_oid = oid
+        self.raw_oid_length = oid_length
+
+        oid_value = self.lookup_oid(self.raw_oid)
+        self.oid = oid_value[0]
+        self.bitlen = oid_value[1]
+
+        return offset
+
+    @property
+    def pub_algorithm(self):
+        return self.lookup_pub_algorithm(self.raw_pub_algorithm)
+
+    def __repr__(self):
+        return "<%s: 0x%s, %s, length %d>" % (
+            self.__class__.__name__, self.key_id.decode('ascii'),
+            self.pub_algorithm, self.length)
+
+
+class PublicSubkeyPacket(PublicKeyPacket):
+    """
+    A Public-Subkey packet (tag 14) has exactly the same format as a
+    Public-Key packet, but denotes a subkey.
+    """
+    pass
 
 
 def new_tag_length(data, start):
     """
     Takes a bytearray of data as input, as well as an offset of where to
     look. Returns a derived (offset, length, partial) tuple.
+    Reference: http://tools.ietf.org/html/rfc4880#section-4.2.2
     """
-    first = my_ord(data[start])
+    first = data[start]
     offset = length = 0
     partial = False
 
+    # one-octet
     if first < 192:
-        length = first
-    elif first < 224:
         offset = 1
-        length = ((first - 192) << 8) + my_ord(data[start + 1]) + 192
+        length = first
+
+    # two-octet
+    elif first < 224:
+        offset = 2
+        length = ((first - 192) << 8) + data[start + 1] + 192
+
+    # five-octet
     elif first == 255:
-        offset = 4
-        length = get_int(data, start + 1, 4)
+        offset = 5
+        length = get_int4(data, start + 1)
+
+    # Partial Body Length header, one octet long
     else:
+        offset = 1
         # partial length, 224 <= l < 255
         length = 1 << (first & 0x1f)
         partial = True
@@ -285,13 +617,84 @@ def old_tag_length(data, start):
     look. Returns a derived (offset, length) tuple.
     """
     offset = length = 0
-    temp_len = my_ord(data[start]) & 0x03
+    temp_len = data[start] & 0x03
 
-    if temp_len in (0, 1, 2):
-        size = (1, 2, 4)[temp_len]
-        offset = size
-        length = get_int(data, start + 1, size)
+    if temp_len == 0:
+        offset = 1
+        length = data[start + 1]
+    elif temp_len == 1:
+        offset = 2
+        length = get_int2(data, start + 1)
+    elif temp_len == 2:
+        offset = 4
+        length = get_int4(data, start + 1)
     elif temp_len == 3:
         length = len(data) - start - 1
 
     return (offset, length)
+
+
+# Severely trimmed down TAG_TYPES list.
+TAG_TYPES = {
+    # (Name, PacketType) tuples
+    6: ("Public Key Packet", PublicKeyPacket),
+}
+
+
+def construct_packet(data, header_start):
+    """
+    Returns a (length, packet) tuple constructed from 'data' at index
+    'header_start'. If there is a next packet, it will be found at
+    header_start + length.
+    """
+
+    # tag encoded in bits 5-0 (new packet format)
+    # 0x3f == 111111b
+    tag = data[header_start] & 0x3f
+
+    # the header is in new format if bit 7 is set
+    # 0x40 == 1000000b
+    new = bool(data[header_start] & 0x40)
+
+    if new:
+        # length is encoded in the second (and following) octet
+        data_offset, data_length, partial = new_tag_length(
+            data, header_start + 1)
+    else:
+        # tag encoded in bits 5-2, discard bits 1-0
+        tag >>= 2
+        data_offset, data_length = old_tag_length(data, header_start)
+        partial = False
+
+    name, PacketType = TAG_TYPES.get(tag, ("Unknown", None))
+    # Packet type not yet handled
+    if not PacketType:
+        PacketType = Packet
+
+    # first octet of the packet header handled
+    data_offset += 1
+
+    # data consumed to create new packet, consists of header and data
+    consumed = 0
+    packet_data = bytearray()
+    original_data = bytearray()
+    while True:
+        consumed += data_offset
+
+        data_start = header_start + data_offset
+        next_header_start = data_start + data_length
+        original_data += data[header_start:next_header_start]
+        packet_data += data[data_start:next_header_start]
+        consumed += data_length
+
+        # The new format might encode data with Partial Body Length headers.
+        # Then a packet consists of alternating header and data regions. The
+        # last header of a packet is not a Partial Body Length header.
+        if partial:
+            data_offset, data_length, partial = new_tag_length(
+                data, next_header_start)
+            header_start = next_header_start
+        else:
+            break
+    packet = PacketType(tag, name, new, packet_data, original_data)
+    return consumed, packet
