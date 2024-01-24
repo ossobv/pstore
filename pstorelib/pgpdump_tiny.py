@@ -487,7 +487,6 @@ class SignaturePacket(Packet, AlgoLookup):
         self.raw_expiration_time = None
         self.expiration_time = None
         self.raw_key_expiration_time = None
-        self.key_expiration_time = None
         self.key_id = None
         self.hash2 = None
         self.subpackets = []
@@ -605,10 +604,6 @@ class SignaturePacket(Packet, AlgoLookup):
         if self.raw_expiration_time:
             self.expiration_time = self.creation_time + timedelta(
                 seconds=self.raw_expiration_time)
-
-        if self.raw_key_expiration_time:
-            self.key_expiration_time = self.creation_time + timedelta(
-                seconds=self.raw_key_expiration_time)
 
     sig_types = {
         0x00: "Signature of a binary document",

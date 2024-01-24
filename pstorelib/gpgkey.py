@@ -18,6 +18,8 @@ Copyright (C) 2013,2015,2017,2018,2024  Walter Doekes <wdoekes>, OSSO B.V.
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307,
     USA.
 """
+from datetime import timedelta
+
 from pstorelib.pgpdump_tiny import AsciiData, BinaryData
 
 
@@ -45,12 +47,21 @@ def get_pubkey_id(data):
 
 def get_pubkey_expiry(data):
     generator = _get_packet_generator(data)
+    creation = None
     expiry = None
+
     for packet in generator.packets():
         if packet.raw == 2:
-            if packet.key_expiration_time:
+            if packet.raw_key_expiration_time:
                 if expiry is not None:
-                    expiry = min(packet.key_expiration_time, expiry)
+                    expiry = min(packet.raw_key_expiration_time, expiry)
                 else:
-                    expiry = packet.key_expiration_time
+                    expiry = packet.raw_key_expiration_time
+        elif packet.raw == 6:
+            creation = packet.creation_time
+
+    if expiry:
+        assert creation, 'creation not set??'
+        expiry = creation + timedelta(seconds=expiry)
+
     return expiry

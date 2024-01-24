@@ -116,7 +116,7 @@ class PublicKey(Model):
                 expiry = expiry.replace(tzinfo=timezone.utc)
         except Exception as e:
             # Something is off.
-            key_id = str(e)
+            key_id = '<%s>' % (e,)
             expiry = None
 
         self.key_id = key_id
