@@ -3,6 +3,14 @@ pstore :: Python Protected Password Store
 
 The list of changes.
 
+2024-01-24: 2.3.0
+-----------------
+ * Remove unused ssh_askpass functionality.
+ * Overhaul default fetch: no encrypted properties are fetched automatically
+   anymore. This way we can do detailed auditing of properties read.
+ * Encrypted properties are now always displayed with -pg in "gray on black".
+   Disable by piping to 'cat' or adding '-v'.
+
 2024-01-22: 2.2.0
 -----------------
  * Add support for ecc/ecdsa/curve25519 keys; fixes:
