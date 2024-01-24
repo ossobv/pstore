@@ -18,7 +18,7 @@ Copyright (C) 2012,2013,2015  Walter Doekes <wdoekes>, OSSO B.V.
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307,
     USA.
 """
-from datetime import datetime, timedelta
+from datetime import timedelta
 from io import BytesIO
 from os import chmod, rename, unlink
 from os.path import basename
