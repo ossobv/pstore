@@ -569,6 +569,8 @@ class SignaturePacket(Packet, AlgoLookup):
         return offset
 
     def parse_subpackets(self, outer_offset, outer_length, hashed=False):
+        raw_key_expiration_time = None
+
         offset = outer_offset
         while offset < outer_offset + outer_length:
             # each subpacket is [variable length] [subtype] [data]
@@ -593,6 +595,8 @@ class SignaturePacket(Packet, AlgoLookup):
                     self.raw_creation_time)
             elif subpacket.subtype == 3:
                 self.raw_expiration_time = get_int4(subpacket.data, 0)
+            elif subpacket.subtype == 9:
+                raw_key_expiration_time = get_int4(subpacket.data, 0)
             elif subpacket.subtype == 16:
                 self.key_id = get_key_id(subpacket.data, 0)
             offset += sub_len
@@ -601,6 +605,13 @@ class SignaturePacket(Packet, AlgoLookup):
         if self.raw_expiration_time:
             self.expiration_time = self.creation_time + timedelta(
                 seconds=self.raw_expiration_time)
+
+        # If subpacket 9 is implemented, give it precedence.
+        # https://datatracker.ietf.org/doc/html/
+        #   draft-ietf-openpgp-rfc4880bis-08#section-5.2.3.1
+        if raw_key_expiration_time:
+            self.expiration_time = self.creation_time + timedelta(
+                seconds=raw_key_expiration_time)
 
     sig_types = {
         0x00: "Signature of a binary document",

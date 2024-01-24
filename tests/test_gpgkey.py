@@ -1,7 +1,7 @@
 # vim: set ts=8 sw=4 sts=4 et ai tw=79:
 """
 pstore-lib -- Python Protected Password Store (Library)
-Copyright (C) 2013,2015,2017,2018  Walter Doekes <wdoekes>, OSSO B.V.
+Copyright (C) 2013,2015,2017,2018,2024  Walter Doekes <wdoekes>, OSSO B.V.
 
     This library is free software; you can redistribute it and/or modify it
     under the terms of the GNU Lesser General Public License as published by
@@ -21,8 +21,7 @@ Copyright (C) 2013,2015,2017,2018  Walter Doekes <wdoekes>, OSSO B.V.
 from base64 import b64decode
 from unittest import TestCase
 
-from pstorelib.gpgkey import (
-    get_pubkey_id_from_ascii, get_pubkey_id_from_binary)
+from pstorelib.gpgkey import get_pubkey_id
 
 
 class UnitTest(TestCase):
@@ -74,9 +73,9 @@ class UnitTest(TestCase):
     )
 
     def test_get_pubkey_id_from_ascii(self):
-        value = get_pubkey_id_from_ascii(self.HARM_PUBKEY_ASCII)
+        value = get_pubkey_id(self.HARM_PUBKEY_ASCII)
         self.assertEqual(value, 'B7C32F6760E5CEC0')
 
     def test_get_pubkey_id_from_binary(self):
-        value = get_pubkey_id_from_binary(self.HARM_PUBKEY_BINARY)
+        value = get_pubkey_id(self.HARM_PUBKEY_BINARY)
         self.assertEqual(value, 'B7C32F6760E5CEC0')

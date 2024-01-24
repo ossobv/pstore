@@ -1,7 +1,7 @@
 # vim: set ts=8 sw=4 sts=4 et ai tw=79:
 """
 pstore-lib -- Python Protected Password Store (Library)
-Copyright (C) 2012,2013,2015-2016,2018  Walter Doekes <wdoekes>, OSSO B.V.
+Copyright (C) 2012,2013,2015-2016,2018,2024  Walter Doekes <wdoekes>, OSSO B.V.
 
     This library is free software; you can redistribute it and/or modify it
     under the terms of the GNU Lesser General Public License as published by
@@ -33,7 +33,7 @@ from gpg.gpgme import (
 from pstorelib.bytes import sendfile
 from pstorelib.exceptions import (
     CryptError, CryptBadPassword, CryptBadPubKey, CryptBadPrivKey)
-from pstorelib.gpgkey import get_pubkey_id_from_ascii
+from pstorelib.gpgkey import get_pubkey_id
 
 
 # A few notes about subkeys:
@@ -207,7 +207,7 @@ class GPGCrypt(object):
 
         # Manually extract the key ID from the public key packet.
         try:
-            key_id = get_pubkey_id_from_ascii(key)
+            key_id = get_pubkey_id(key)
             assert key_id is not None, 'no public key packet found'
             key = self.get_key(id=key_id)
         except Exception as e:
