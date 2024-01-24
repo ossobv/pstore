@@ -38,6 +38,10 @@ STATIC_URL = '/static/'
 # Generally unused, but still needed.
 SITE_ID = 1
 
+# If you have 8 users and 13 properties, you'll exceed the default 100 files
+# during the upload. Increase this by a lot.
+DATA_UPLOAD_MAX_NUMBER_FILES = 2000
+
 # Middleware.
 MIDDLEWARE = [
     # #'pstore.middleware.LogSqlToConsoleMiddleware',
