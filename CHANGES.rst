@@ -3,6 +3,14 @@ pstore :: Python Protected Password Store
 
 The list of changes.
 
+2024-01-24: 2.4.0
+-----------------
+ * Store key_id and key_expiry_time on the PublicKey object in the DB; for
+   quick access.
+ * Have the client warn if its publickey expires within 90 days. Also
+   warn if it's writing something using a public key that expires within
+   90 days.
+
 2024-01-24: 2.3.0
 -----------------
  * Remove unused ssh_askpass functionality.
