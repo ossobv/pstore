@@ -120,6 +120,14 @@ def get_hex_data(data, offset, byte_count):
     return key_data.hex().encode().upper()
 
 
+def get_key_id(data, offset):
+    """
+    Pull eight bytes from data at offset and return as a 16-byte hex-encoded
+    string.
+    """
+    return get_hex_data(data, offset, 8)
+
+
 def get_int2(data, offset):
     """
     Pull two bytes from data at offset and return as an integer.
@@ -409,6 +417,227 @@ class AlgoLookup(object):
         return cls._lookup_sym_algorithm(alg)[1]
 
 
+class SignatureSubpacket(object):
+    """
+    A signature subpacket containing a type, type name, some flags, and the
+    contained data.
+    """
+    CRITICAL_BIT = 0x80
+    CRITICAL_MASK = 0x7f
+
+    def __init__(self, raw, hashed, data):
+        self.raw = raw
+        self.subtype = raw & self.CRITICAL_MASK
+        self.hashed = hashed
+        self.critical = bool(raw & self.CRITICAL_BIT)
+        self.length = len(data)
+        self.data = data
+
+    subpacket_types = {
+        2: "Signature Creation Time",
+        3: "Signature Expiration Time",
+        4: "Exportable Certification",
+        5: "Trust Signature",
+        6: "Regular Expression",
+        7: "Revocable",
+        9: "Key Expiration Time",
+        10: "Placeholder for backward compatibility",
+        11: "Preferred Symmetric Algorithms",
+        12: "Revocation Key",
+        16: "Issuer",
+        20: "Notation Data",
+        21: "Preferred Hash Algorithms",
+        22: "Preferred Compression Algorithms",
+        23: "Key Server Preferences",
+        24: "Preferred Key Server",
+        25: "Primary User ID",
+        26: "Policy URI",
+        27: "Key Flags",
+        28: "Signer's User ID",
+        29: "Reason for Revocation",
+        30: "Features",
+        31: "Signature Target",
+        32: "Embedded Signature",
+    }
+
+    @property
+    def name(self):
+        if self.subtype in (0, 1, 8, 13, 14, 15, 17, 18, 19):
+            return "Reserved"
+        return self.subpacket_types.get(self.subtype, "Unknown")
+
+    def __repr__(self):
+        extra = ""
+        if self.hashed:
+            extra += "hashed, "
+        if self.critical:
+            extra += "critical, "
+        return "<%s: %s, %slength %d>" % (
+            self.__class__.__name__, self.name, extra, self.length)
+
+
+class SignaturePacket(Packet, AlgoLookup):
+    def __init__(self, *args, **kwargs):
+        self.sig_version = None
+        self.raw_sig_type = None
+        self.raw_pub_algorithm = None
+        self.raw_hash_algorithm = None
+        self.raw_creation_time = None
+        self.creation_time = None
+        self.raw_expiration_time = None
+        self.expiration_time = None
+        self.key_id = None
+        self.hash2 = None
+        self.subpackets = []
+
+        self.sig_data = None
+
+        super(SignaturePacket, self).__init__(*args, **kwargs)
+
+    def parse(self):
+        self.sig_version = self.data[0]
+        offset = 1
+        if self.sig_version in (2, 3):
+            # 00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f
+            # |  |  [  ctime  ] [ key_id                 ] |
+            # |  |-type                           pub_algo-|
+            # |-hash material
+            # 10 11 12
+            # |  [hash2]
+            # |-hash_algo
+
+            # "hash material" byte must be 0x05
+            if self.data[offset] != 0x05:
+                raise PgpdumpException("Invalid v3 signature packet")
+            offset += 1
+
+            self.raw_sig_type = self.data[offset]
+            offset += 1
+
+            self.raw_creation_time = get_int4(self.data, offset)
+            self.creation_time = datetime.utcfromtimestamp(
+                self.raw_creation_time)
+            offset += 4
+
+            self.key_id = get_key_id(self.data, offset)
+            offset += 8
+
+            self.raw_pub_algorithm = self.data[offset]
+            offset += 1
+
+            self.raw_hash_algorithm = self.data[offset]
+            offset += 1
+
+            self.hash2 = self.data[offset:offset + 2]
+            offset += 2
+
+        elif self.sig_version == 4:
+            # 00 01 02 03 ... <hashedsubpackets..> <subpackets..> [hash2]
+            # |  |  |-hash_algo
+            # |  |-pub_algo
+            # |-type
+
+            self.raw_sig_type = self.data[offset]
+            offset += 1
+
+            self.raw_pub_algorithm = self.data[offset]
+            offset += 1
+
+            self.raw_hash_algorithm = self.data[offset]
+            offset += 1
+
+            # next is hashed subpackets
+            length = get_int2(self.data, offset)
+            offset += 2
+            self.parse_subpackets(offset, length, True)
+            offset += length
+
+            # followed by subpackets
+            length = get_int2(self.data, offset)
+            offset += 2
+            self.parse_subpackets(offset, length, False)
+            offset += length
+
+            self.hash2 = self.data[offset:offset + 2]
+            offset += 2
+
+            self.sig_data, offset = get_mpi(self.data, offset)
+        else:
+            raise PgpdumpException("Unsupported signature packet, version %d" %
+                                   self.sig_version)
+
+        return offset
+
+    def parse_subpackets(self, outer_offset, outer_length, hashed=False):
+        offset = outer_offset
+        while offset < outer_offset + outer_length:
+            # each subpacket is [variable length] [subtype] [data]
+            sub_offset, sub_len, sub_part = new_tag_length(self.data, offset)
+            # sub_len includes the subtype single byte, knock that off
+            sub_len -= 1
+            # initial length bytes
+            offset += sub_offset
+
+            subtype = self.data[offset]
+            offset += 1
+
+            sub_data = self.data[offset:offset + sub_len]
+            if len(sub_data) != sub_len:
+                raise PgpdumpException(
+                    "Unexpected subpackets length: expected %d, got %d" % (
+                        sub_len, len(sub_data)))
+            subpacket = SignatureSubpacket(subtype, hashed, sub_data)
+            if subpacket.subtype == 2:
+                self.raw_creation_time = get_int4(subpacket.data, 0)
+                self.creation_time = datetime.utcfromtimestamp(
+                    self.raw_creation_time)
+            elif subpacket.subtype == 3:
+                self.raw_expiration_time = get_int4(subpacket.data, 0)
+            elif subpacket.subtype == 16:
+                self.key_id = get_key_id(subpacket.data, 0)
+            offset += sub_len
+            self.subpackets.append(subpacket)
+
+        if self.raw_expiration_time:
+            self.expiration_time = self.creation_time + timedelta(
+                seconds=self.raw_expiration_time)
+
+    sig_types = {
+        0x00: "Signature of a binary document",
+        0x01: "Signature of a canonical text document",
+        0x02: "Standalone signature",
+        0x10: "Generic certification of a User ID and Public Key packet",
+        0x11: "Persona certification of a User ID and Public Key packet",
+        0x12: "Casual certification of a User ID and Public Key packet",
+        0x13: "Positive certification of a User ID and Public Key packet",
+        0x18: "Subkey Binding Signature",
+        0x19: "Primary Key Binding Signature",
+        0x1f: "Signature directly on a key",
+        0x20: "Key revocation signature",
+        0x28: "Subkey revocation signature",
+        0x30: "Certification revocation signature",
+        0x40: "Timestamp signature",
+        0x50: "Third-Party Confirmation signature",
+    }
+
+    @property
+    def sig_type(self):
+        return self.sig_types.get(self.raw_sig_type, "Unknown")
+
+    @property
+    def pub_algorithm(self):
+        return self.lookup_pub_algorithm(self.raw_pub_algorithm)
+
+    @property
+    def hash_algorithm(self):
+        return self.lookup_hash_algorithm(self.raw_hash_algorithm)
+
+    def __repr__(self):
+        return "<%s: %s, %s, length %d>" % (
+            self.__class__.__name__, self.pub_algorithm,
+            self.hash_algorithm, self.length)
+
+
 class PublicKeyPacket(Packet, AlgoLookup):
     def __init__(self, *args, **kwargs):
         self.pubkey_version = None
@@ -637,6 +866,7 @@ def old_tag_length(data, start):
 # Severely trimmed down TAG_TYPES list.
 TAG_TYPES = {
     # (Name, PacketType) tuples
+    2: ("Signature Packet", SignaturePacket),
     6: ("Public Key Packet", PublicKeyPacket),
 }
 
