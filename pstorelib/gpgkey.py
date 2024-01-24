@@ -48,9 +48,9 @@ def get_pubkey_expiry(data):
     expiry = None
     for packet in generator.packets():
         if packet.raw == 2:
-            if packet.expiration_time:
+            if packet.key_expiration_time:
                 if expiry is not None:
-                    expiry = min(packet.expiration_time, expiry)
+                    expiry = min(packet.key_expiration_time, expiry)
                 else:
-                    expiry = packet.expiration_time
+                    expiry = packet.key_expiration_time
     return expiry

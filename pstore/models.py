@@ -18,6 +18,7 @@ Copyright (C) 2010,2012,2013,2015,2017  Walter Doekes <wdoekes>, OSSO B.V.
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307,
     USA.
 """
+from datetime import timezone
 from random import getrandbits
 
 from django.contrib.auth.models import User
@@ -29,6 +30,7 @@ from django.utils.timezone import now
 
 from pstorelib.crypt import CryptoWriter
 from pstorelib.exceptions import CryptError
+from pstorelib.gpgkey import get_pubkey_id, get_pubkey_expiry
 
 from pstore.db import Model, ValidationMixin
 from pstore.notify import (notify_object_deletion, notify_publickey_change,
@@ -64,6 +66,10 @@ class PublicKey(Model):
         max_length=255, blank=True,
         help_text=_('Human readable info about the key, e.g. the PGP key '
                     'uid (Alex B <alex@example.com>).'))
+    key_id = models.CharField(
+        max_length=255, blank=True, editable=False, default='')
+    expires_at = models.DateTimeField(
+        null=True, blank=True, editable=False, default=None)
 
     def __init__(self, *args, **kwargs):
         super(PublicKey, self).__init__(*args, **kwargs)
@@ -98,6 +104,23 @@ class PublicKey(Model):
         # excess LFs and space so the key_type() function works.
         self.key = self.key.strip().replace('\r', '')
         self.description = self.description.strip().replace('\r', '')
+
+        # Non-editable fields.
+        try:
+            key_id = get_pubkey_id(self.key)
+            if not key_id:
+                key_id = '<error_cannot_read_key>'
+
+            expiry = get_pubkey_expiry(self.key)
+            if expiry:
+                expiry = expiry.replace(tzinfo=timezone.utc)
+        except Exception as e:
+            # Something is off.
+            key_id = str(e)
+            expiry = None
+
+        self.key_id = key_id
+        self.expires_at = expiry
 
         ret = super(PublicKey, self).save(**kwargs)
         if hasattr(self, 'original'):

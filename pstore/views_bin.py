@@ -168,8 +168,10 @@ def create_nonce(request):
     nonce = Nonce.objects.create(user=user)
 
     # Response:
-    return EncryptedResponse(data=nonce.encrypted,
-                             enctype=user.publickey.key_type())
+    return EncryptedResponse(
+        data=nonce.encrypted,
+        enctype=user.publickey.key_type(),
+        key_expiry=user.publickey.expires_at)
 
 
 @nonce_required

@@ -108,7 +108,7 @@ class PropertyAdmin(admin.ModelAdmin):
 
 
 class PublicKeyAdmin(admin.ModelAdmin):
-    list_display = ('__str__', 'description')
+    list_display = ('__str__', 'description', 'key_id', 'expires_at')
     ordering = ('user__username',)
 
 

@@ -185,14 +185,13 @@ class GPGCrypt(object):
             if not (subkey.expired or subkey.invalid or subkey.revoked
                     or subkey.disabled or not subkey.can_encrypt):
                 break
-        if subkey.expires and float(subkey.expires - time()) / 86400.0 < 25:
-            # Send out a warning that this key is about to expires. I'm not
-            # sure what the implications of expired keys are, but let's prepare
-            # for the worst and warn the user at an early stage.
+        if subkey.expires and float(subkey.expires - time()) / 86400.0 < 90:
+            # Send out a warning that this key is about to expire. We want to
+            # notify as many people as possible about this soon.
             stderr.write(
-                'WARNING: (sub)key %s for %s will expire in %.1f days\n\n' % (
-                    subkey.keyid, key.uids[0].email,
-                    float(subkey.expires - time()) / 86400.0))
+                '\nWARNING: (sub)key %s for %s will expire in %.1f days\n\n' %
+                (subkey.keyid, key.uids[0].email,
+                 float(subkey.expires - time()) / 86400.0))
 
         # Ok. All is good.
         return key

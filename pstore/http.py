@@ -22,6 +22,7 @@ import logging
 from wsgiref.util import FileWrapper
 
 from django.http import HttpResponse
+from django.utils.timezone import now
 
 from pstorelib.bytes import get_size
 
@@ -59,7 +60,7 @@ class EncryptedResponse(HttpResponse):
     just adds the appropriate headers for the decrypting end to know how to
     decrypt it.
     """
-    def __init__(self, data=None, fp=None, enctype=None):
+    def __init__(self, data=None, fp=None, enctype=None, key_expiry=None):
         """
         Specify either file or data.
         """
@@ -79,6 +80,9 @@ class EncryptedResponse(HttpResponse):
         super(EncryptedResponse, self).__init__(content, content_type=ctype)
         self['Content-Length'] = content_length
         self['X-Encryption'] = enctype
+        if key_expiry:
+            key_seconds_left = int((key_expiry - now()).total_seconds())
+            self['X-Key-Expiry'] = key_seconds_left
 
 
 class VoidResponse(HttpResponse):

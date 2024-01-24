@@ -241,6 +241,7 @@ class Backend(object):
             finally:
                 file.close()
             data = None
+            key_expiry = None
 
         # JSON data?
         elif path.endswith('.js'):
@@ -248,6 +249,7 @@ class Backend(object):
                 data = from_jsonfile(utf8_reader(file))
             finally:
                 file.close()
+            key_expiry = None
 
         # Binary data?
         elif path.endswith('.bin'):
@@ -257,9 +259,11 @@ class Backend(object):
             except AttributeError:  # py3
                 content_length = file.headers.get('content-length')
                 enctype = file.headers.get('x-encryption', 'none')
+                key_expiry = file.headers.get('x-key-expiry')
             else:  # py2
                 content_length = file.headers.getheader('content-length')
                 enctype = file.headers.getheader('x-encryption', 'none')
+                key_expiry = file.headers.getheader('x-key-expiry')
             finally:
                 length = int(content_length)
             # No file closing here.. the cryptoreader gets to use it.
@@ -269,6 +273,12 @@ class Backend(object):
         else:
             file.close()
             raise NotImplementedError(path)
+
+        # Show warning about keys about to expire.
+        if key_expiry and (int(key_expiry) // 86400) < 90:
+            stderr.write(
+                'WARNING: your (sub)key will expire in %.1f days\n\n' % (
+                    float(key_expiry) / 86400.0))
 
         return data
 
