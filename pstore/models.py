@@ -43,9 +43,9 @@ ascii_validator = RegexValidator(
 
 class PublicKey(Model):
     """
-    The user's public key. To reduce complexity, a user is only allowed to have
-    one public key. If you want multiple public keys, you should create
-    multiple users.
+    The user's public key. There are read/write public keys, and there are
+    write-public keys. The write keys will authenticate a request and will
+    allow updating, but data will not be encrypted with them.
 
     The key property should hold the PGP public key block:
 
@@ -55,9 +55,9 @@ class PublicKey(Model):
         mI0EULkrQAEEAKU++49M+QfiSTFJjWQ8Yyr+OKa0V90aNGbYNaGvfzlPVHNS+AwR
         ...
 
-    Encrypted Property objects are encrypted using this public key.
+    Encrypted Property objects are encrypted using the read/write public keys.
     """
-    user = models.OneToOneField(
+    user = models.ForeignKey(
         User, related_name='publickey', on_delete=models.CASCADE)
     key = models.TextField(
         blank=False, validators=[ascii_validator],
@@ -66,6 +66,12 @@ class PublicKey(Model):
         max_length=255, blank=True,
         help_text=_('Human readable info about the key, e.g. the PGP key '
                     'uid (Alex B <alex@example.com>).'))
+    can_decrypt = models.BooleanField(
+        blank=True, default=True,
+        help_text=_('A user should have at least one can_decrypt key. '
+                    'Keys without are only useful to authenticate for '
+                    'writing. This can be useful in some places where '
+                    'new passwords are set but not read.'))
     key_id = models.CharField(
         max_length=255, blank=True, editable=False, default='')
     expires_at = models.DateTimeField(
@@ -327,7 +333,13 @@ class Nonce(ValidationMixin, models.Model):
         assert self.user
         assert not self.encrypted
 
-        publickey = self.user.publickey
+        publickeys = list(self.user.publickey.filter(can_decrypt=True))
+        if len(publickeys) != 1:
+            raise NotImplementedError(
+                '{} multiple public keys with can_decrypt?'.format(
+                    len(publickeys)))
+        publickey = publickeys[0]
+
         try:
             writer = CryptoWriter(self.value)
             encrypted_file = writer.encrypt_with(publickey.key)

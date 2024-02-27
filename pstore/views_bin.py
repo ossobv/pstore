@@ -167,11 +167,18 @@ def create_nonce(request):
     # Ok, create a new one.
     nonce = Nonce.objects.create(user=user)
 
+    publickeys = list(user.publickey.filter(can_decrypt=True))
+    if len(publickeys) != 1:
+        raise NotImplementedError(
+            '{} multiple public keys with can_decrypt?'.format(
+                len(publickeys)))
+    publickey = publickeys[0]
+
     # Response:
     return EncryptedResponse(
         data=nonce.encrypted,
-        enctype=user.publickey.key_type(),
-        key_expiry=user.publickey.expires_at)
+        enctype=publickey.key_type(),
+        key_expiry=publickey.expires_at)
 
 
 @nonce_required
