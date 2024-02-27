@@ -51,7 +51,7 @@ class Test(TestCase):
 
             input = Data(source)
             output = Data()
-            g.encrypt(input=input, output=output, public_key_ref=key)
+            g.encrypt(input=input, output=output, public_key_refs=[key])
             encrypted = output.read()
 
             # Valid assumption when input is small.

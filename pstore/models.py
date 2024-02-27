@@ -265,7 +265,8 @@ class Property(ValidationMixin, models.Model):
         """
         if bool(self.type & self.BIT_ENCRYPTED):
             assert self.user_id is not None
-            return PublicKey.objects.get(user__id=self.user_id).key_type()
+            return PublicKey.objects.get(
+                can_decrypt=True, user__id=self.user_id).key_type()
         assert self.user_id is None
         return 'none'
 
@@ -333,16 +334,10 @@ class Nonce(ValidationMixin, models.Model):
         assert self.user
         assert not self.encrypted
 
-        publickeys = list(self.user.publickey.filter(can_decrypt=True))
-        if len(publickeys) != 1:
-            raise NotImplementedError(
-                '{} multiple public keys with can_decrypt?'.format(
-                    len(publickeys)))
-        publickey = publickeys[0]
-
         try:
             writer = CryptoWriter(self.value)
-            encrypted_file = writer.encrypt_with(publickey.key)
+            encrypted_file = writer.encrypt_with(public_keys=list(
+                self.user.publickey.values_list('key', flat=True)))
             self.encrypted = encrypted_file.read()
         except CryptError as e:
             raise CryptError("Encrypting for '%s' failed" % (self.user,), e)
@@ -370,7 +365,7 @@ def on_user_delete(instance, **kwargs):
     # We pass the public key and the objects because if notify had to know
     # about them, we'd get a circular dependency.
     try:
-        publickey = PublicKey.objects.get(user=instance)
+        publickey = PublicKey.objects.get(user=instance, can_decrypt=True)
     except PublicKey.DoesNotExist:
         publickey = None
 

@@ -104,7 +104,9 @@ def get_object(request, object_identifier):
         if user:
             if not enctype:
                 encuid = user
-                enctype = PublicKey.objects.get(user__id=user).key_type()
+                enctype = (
+                    PublicKey.objects
+                    .get(can_decrypt=True, user__id=user).key_type())
                 assert enctype
             else:
                 assert encuid == user, '%r == %r' % (encuid, user)
@@ -279,7 +281,8 @@ def list_users(request):
     q = request.GET.getlist('q')
 
     # Query:
-    qs = PublicKey.objects.filter(user__is_active=True).select_related('user')
+    qs = PublicKey.objects.filter(
+        can_decrypt=True, user__is_active=True).select_related('user')
     if q:
         filter = Q()
         for username in q:

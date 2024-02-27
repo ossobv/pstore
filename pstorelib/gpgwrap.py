@@ -246,16 +246,16 @@ class GPGCrypt(object):
         sendfile(output_orig, output)
         output_orig.seek(0)
 
-    def encrypt(self, public_key_ref=None, input=None, output=None):
+    def encrypt(self, public_key_refs=None, input=None, output=None):
         """
-        We're always encrypting to a single user at a time. That makes revoking
-        user permissions easier: we don't have to re-encrypt the whole bunch.
+        We generally encrypt passwords for a single key, that makes revoking
+        simpler. But for nonces we have to encrypt for multiple recipients.
         """
-        assert public_key_ref is not None
+        assert public_key_refs is not None
         assert hasattr(input, 'read')
         assert hasattr(output, 'write')
 
-        self.context.op_encrypt([public_key_ref], 1, input, output)
+        self.context.op_encrypt(list(public_key_refs), 1, input, output)
 
         # length = output.tell()
         output.seek(0)

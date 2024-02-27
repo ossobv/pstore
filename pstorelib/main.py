@@ -146,7 +146,7 @@ class PStoreInterface(object):
             if 'PSTORE_NOINPUT' not in os.environ:
                 sys.stderr.write('INFO: encrypting..\n')
             for user in allowed_users:
-                encryptedfp = writer.encrypt_with(keys[user])
+                encryptedfp = writer.encrypt_with(public_key=keys[user])
                 files.append((
                     property.encode('ascii'), user.encode('ascii'),
                     encryptedfp))
@@ -207,7 +207,7 @@ class PStoreInterface(object):
             if 'PSTORE_NOINPUT' not in os.environ:
                 sys.stderr.write('INFO: encrypting..\n')
             for user in allowed_users:
-                encryptedfp = writer.encrypt_with(keys[user])
+                encryptedfp = writer.encrypt_with(public_key=keys[user])
                 files.append((
                     property.encode('ascii'), user.encode('ascii'),
                     encryptedfp))

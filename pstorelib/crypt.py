@@ -107,12 +107,16 @@ class CryptoWriter(object):
             return 'gpg'
         raise NotImplementedError('unknown public key type', public_key)
 
-    def encrypt_with(self, public_key):
+    def encrypt_with(self, public_key=None, public_keys=None):
         """
         May raise one of the CryptErrors.
         """
         # We *could* defer encryption until the first read() call is done on
         # the outputted value. But I don't see any benefits.
+        assert bool(public_key is None) ^ bool(public_keys is None), (
+            'either public_key or public_keys should be set')
+        if public_keys is None:
+            public_keys = (public_key,)
 
         # Make sure that a reused Writer provides the right info.
         if self.fp:
@@ -120,12 +124,14 @@ class CryptoWriter(object):
                 self.fp.seek(0)  # if this breaks, we didn't init fp properly
             self.fpreads += 1
 
-        enctype = self._get_enctype(public_key)
+        enctypes = set([self._get_enctype(pk) for pk in public_keys])
+        assert len(enctypes) == 1, enctypes
+        enctype = list(enctypes)[0]
 
         if enctype == 'none':
             return self._encrypt_with_none()
         elif enctype == 'gpg':
-            return self._encrypt_with_gpg(public_key)
+            return self._encrypt_with_gpg(public_keys)
         raise NotImplementedError('unknown encryption type')
 
     def _encrypt_with_none(self):
@@ -145,9 +151,10 @@ class CryptoWriter(object):
             # the data already was a string.
             return BytesIO(self.data)
 
-    def _encrypt_with_gpg(self, public_key):
+    def _encrypt_with_gpg(self, public_keys):
         gpgcrypt = GPGCrypt()
-        gpgkey = gpgcrypt.import_key(public_key)
+
+        gpgkeys = [gpgcrypt.import_key(pk) for pk in public_keys]
 
         if self.fp:
             input = self.fp
@@ -158,7 +165,7 @@ class CryptoWriter(object):
         else:
             output = GPGData()
 
-        gpgcrypt.encrypt(input=input, output=output, public_key_ref=gpgkey)
+        gpgcrypt.encrypt(input=input, output=output, public_key_refs=gpgkeys)
 
         if self.use_tempfile:
             return output

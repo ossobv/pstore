@@ -87,11 +87,15 @@ class Test(TestCase):
         source = b'no encryption'
         # The writer should support writing multiple times.
         writer = CryptoWriter(data=source)
-        self.assertEqual(writer.encrypt_with(None).read(), source)
-        self.assertEqual(writer.encrypt_with(None).read(), source)
+        self.assertEqual(
+            writer.encrypt_with(public_keys=[None]).read(), source)
+        self.assertEqual(
+            writer.encrypt_with(public_keys=[None]).read(), source)
         writer = CryptoWriter(fp=BytesIO(source))
-        self.assertEqual(writer.encrypt_with(None).read(), source)
-        self.assertEqual(writer.encrypt_with(None).read(), source)
+        self.assertEqual(
+            writer.encrypt_with(public_keys=[None]).read(), source)
+        self.assertEqual(
+            writer.encrypt_with(public_keys=[None]).read(), source)
 
     def test_cryptoreader_none(self):
         source = b'no encryption'
@@ -132,7 +136,7 @@ class Test(TestCase):
         source = b'a bit of data'
 
         writer = CryptoWriter(fp=ReadOnce(source))
-        fp1 = writer.encrypt_with(self.ALEX_PUBKEY)
+        fp1 = writer.encrypt_with(public_key=self.ALEX_PUBKEY)
 
         reader = CryptoReader(fp=fp1, enctype='gpg')
         decfp = reader.decrypt_with()
@@ -170,5 +174,5 @@ def encrypts(unencrypted, public_key):
     ``pickle.dumps()`` which also returns a byte string.
     """
     obj = CryptoWriter(data=unencrypted)
-    file = obj.encrypt_with(public_key)
+    file = obj.encrypt_with(public_key=public_key)
     return file.read()
