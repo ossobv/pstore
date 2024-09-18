@@ -3,6 +3,13 @@ pstore :: Python Protected Password Store
 
 The list of changes.
 
+2024-09-18: 2.5.0
+-----------------
+ * Allow writeonly keys to be used. You can have multiple writeonly GPG
+   keys and only one readwrite key. This is useful in remote areas where
+   you have to update secrets but not read them.
+ * Better handling of gpgme errors (no big backtrace in your face).
+
 2024-01-24: 2.4.0
 -----------------
  * Store key_id and key_expiry_time on the PublicKey object in the DB; for
