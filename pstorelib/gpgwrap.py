@@ -234,11 +234,23 @@ class GPGCrypt(object):
             # If you press ^C during passphrase input.
             #   GpgError: (7, 58, u'No data')
             #   == (e.source, e.code, e.context)
-            if e.source == 7:
-                if e.code == 11:
+            if e.source == 7:       # 'GPGME'
+                if e.code == 11:    # ...
                     raise CryptBadPassword()
-                if e.code == 152:
+                if e.code in (17, 152):
+                    # 17 = No secret key
+                    # 152 = Bad (corrupt?) secret key
                     raise CryptBadPrivKey()
+            elif e.source == 4:     # 'GPG Agent'
+                if e.code == 11:    # 'Bad passphrase'
+                    raise CryptBadPassword()
+            elif e.source == 5:     # 'Pinentry'
+                if e.code == 99:    # 'Operation cancelled'
+                    raise CryptError('operation cancelled')
+                if e.code == 32870:  # 'Inappropriate ioctl for device'
+                    raise CryptError('pinentry failed')
+            print((e.source, e.source_str, e.code, e.code_str),
+                  file=stderr)
             raise
 
         # length = output.tell()
