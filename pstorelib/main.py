@@ -583,7 +583,7 @@ Usage:                                          | *        * |
     (add machine and allow access)              --------------
   pstore -P machine [+user1] [^user2]
     (change machine password and allow/revoke access)
-  echo Under the cupboard | pstore -ps machine location
+  echo -n Under the cupboard | pstore -ps machine location
     (add unencrypted location property to machine; use -pl to list, -pg
      to get and -pe to store *encrypted* properties)
   pstore -s [propkey=][propvalue]
