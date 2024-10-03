@@ -347,11 +347,15 @@ Steps:
    we want to restore. Limit results to the property name we want and the
    user ``16``. Example::
 
-    # mysqldumpdissect -f dump.sql --coleq pstore_property=2:i:10961 |
-        grep data-drive-encryption | grep ', *16,'
+    # mysqldumpdissect -f dump.sql --coleq pstore_property=2:i:10961 \
+        --coleq pstore_property=3:s:data-drive-encryption \
+        --coleq pstore_property=6:i:16
     INSERT INTO `pstore_property` VALUES (
       309917, '2024-01-24 10:43:09', 10961, 'data-drive-encryption', 3,
       X'<hex_password>', 16, NULL);
+
+   (You need `multiple --coleq support
+   <https://github.com/ossobv/vcutil/commit/51d9f8650b2e06110ea7fa232c798852844ab8df>`_.)
 
 5. Replace the password in the live database. Example::
 
