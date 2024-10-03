@@ -13,8 +13,8 @@ encrypted passwords on a remote server. All encryption is done locally
 by the command line interface, so the server never sees your unencrypted
 passwords.
 
-Summary 
---------
+Summary
+-------
 
 (`back to top`_)
 
@@ -33,8 +33,8 @@ on the pstore server. After that you're ready to go.
 (\*) Security of course depends on everyone using strong secret keys and
 everyone keeping them private.
 
-Usage examples 
----------------
+Usage examples
+--------------
 
 (`back to top`_)
 
@@ -42,7 +42,7 @@ You have set your ``.pstorerc``:
 
 ::
 
-    $ cat ~/.pstorerc 
+    $ cat ~/.pstorerc
     --store-url=https://my.pstore.server/
 
 List all machines that contain example in the name:
@@ -68,8 +68,8 @@ Add a new machine password, also accessible for joe:
 ::
 
     $ pstore -c walter2.example.com +joe
-    Type new machine password: 
-    Type new machine password again: 
+    Type new machine password:
+    Type new machine password again:
 
     $ pstore example
       Machine                   User access
@@ -96,8 +96,8 @@ machine:
 See the ``contrib`` directory for bash completion scripts and a *dirty
 hack* to supply the password to the *ssh* client automatically.
 
-Installation 
--------------
+Installation
+------------
 
 (`back to top`_)
 
@@ -178,8 +178,8 @@ Set up the client:
 You're ready to go. Call the pstore client with ``--help`` and
 ``--help --verbose`` for more help and tips.
 
-FAQ 
-----
+FAQ
+---
 
 (`back to top`_)
 
@@ -309,6 +309,79 @@ permissions in /tmp.
 
 Further, you may need to increase the ``max_allowed_packet`` to
 something higher than ``16MB`` if you want to store larger files.
+
+Restoring pstore properties from MySQLdump
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Restoring an overwritten password from a mysqldump is a slightly complex
+process that involves:
+
+- Finding the right property in the dump for your user.
+- Updating the DB so that property is restored.
+- Using the pstore client to read the property and then manually write
+  it again so the restored password is visible for everyone.
+
+Steps:
+
+1. Find the SQL dump and name it ``dump.sql``. Make sure you have
+   `mysqldumpdissect
+   <https://github.com/ossobv/vcutil/blob/develop/mysqldumpdissect>`_.
+
+2. Find your own user ``john``, that has the password, in the ``auth_user``
+   table. Example::
+
+    # mysqldumpdissect -f dump.sql --coleq auth_user=1:s:john
+    INSERT INTO `auth_user` VALUES (
+      16, 'john', 'John', 'Doe', 'jdoe@example.com', '<hidden>', 1, 1, 1,
+      '2024-09-26 11:34:55.616825', '2013-03-06 15:34:08');
+
+3. Find the object ``the_object_name`` in the ``pstore_object`` table.
+   Example::
+
+    # mysqldumpdissect -f dump.sql --coleq pstore_object=3:s:the_object_name
+    INSERT INTO `pstore_object` VALUES (
+      10961, '2023-09-12 10:35:37', '2023-09-12 10:35:37', 'the_object_name',
+      '2024-08-12 10:20:23.404900');
+
+4. Find the property ``data-drive-encryption`` for object ``10961`` that
+   we want to restore. Limit results to the property name we want and the
+   user ``16``. Example::
+
+    # mysqldumpdissect -f dump.sql --coleq pstore_property=2:i:10961 |
+        grep data-drive-encryption | grep ', *16,'
+    INSERT INTO `pstore_property` VALUES (
+      309917, '2024-01-24 10:43:09', 10961, 'data-drive-encryption', 3,
+      X'<hex_password>', 16, NULL);
+
+5. Replace the password in the live database. Example::
+
+    SQL> SELECT HEX(value) FROM pstore_property WHERE object_id = 10961 AND
+           user_id = 16 AND name = 'data-drive-encryption';
+    ... this shows the bad new password ...
+
+    SQL> UPDATE pstore_property SET value = X'<hex_password>'
+         WHERE object_id = 10961 AND user_id = 16 AND
+           name = 'data-drive-encryption';
+    ... update the password with the one found in the mysqldump ...
+
+6. Load password through the pstore client and re-encrypt said password so
+   that the property is corrected for *everyone*. Example::
+
+    # pstore the_object_name -pg data-drive-encryption |
+        pstore the_object_name -pe data-drive-encryption
+
+*An alternative to steps 1 through 4 would be to load the database into a
+temporary location, and doing the lookup with SQL*::
+
+    SQL> SELECT HEX(p.value) FROM pstore_property p
+         INNER JOIN pstore_object o ON o.id = p.object_id
+         INNER JOIN auth_user u ON u.id = p.user_id
+         WHERE identifier = 'the_obect_name' AND
+           p.name = 'data-drive-encryption' AND u.username = 'john'\G
+    *************************** 1. row ***************************
+    HEX(p.value): 845E..
+    1 row in set (0.001 sec)
+
 
 (`back to top`_)
 
