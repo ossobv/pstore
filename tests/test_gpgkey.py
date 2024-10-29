@@ -19,9 +19,10 @@ Copyright (C) 2013,2015,2017,2018,2024  Walter Doekes <wdoekes>, OSSO B.V.
     USA.
 """
 from base64 import b64decode
+from datetime import datetime
 from unittest import TestCase
 
-from pstorelib.gpgkey import get_pubkey_id
+from pstorelib.gpgkey import get_pubkey_expiry, get_pubkey_id
 
 
 class UnitTest(TestCase):
@@ -72,6 +73,122 @@ class UnitTest(TestCase):
         'TeO36hkKrU3I+IJdE+GN'
     )
 
+    TEST1_KEY_WITH_1Y_EXPIRY = '''\
+-----BEGIN PGP PUBLIC KEY BLOCK-----
+
+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
+Z0PrRJRebr4=
+=24I+
+-----END PGP PUBLIC KEY BLOCK-----
+'''
+    TEST1_KEY_WITH_2Y_EXPIRY = '''\
+-----BEGIN PGP PUBLIC KEY BLOCK-----
+
+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
+FMBf4Lt1qLD2MpquDHUgwgV5k1edAKM=
+=VWCK
+-----END PGP PUBLIC KEY BLOCK-----
+'''
+
     def test_get_pubkey_id_from_ascii(self):
         value = get_pubkey_id(self.HARM_PUBKEY_ASCII)
         self.assertEqual(value, 'B7C32F6760E5CEC0')
@@ -79,3 +196,41 @@ class UnitTest(TestCase):
     def test_get_pubkey_id_from_binary(self):
         value = get_pubkey_id(self.HARM_PUBKEY_BINARY)
         self.assertEqual(value, 'B7C32F6760E5CEC0')
+
+    def test_test1_1y_expiry(self):
+        """
+        Test a key with multiple signature packets from the same master key.
+
+            :public key packet:
+            :user ID packet: "Test1 <test1@example.com>"
+            :signature packet: algo 1, keyid F23A739F45D823EE
+                    hashed subpkt 2 len 4 (sig created 2024-10-29)
+                    hashed subpkt 9 len 4 (key expires after 1y0d0h2m)
+            :signature packet: algo 1, keyid F23A739F45D823EE
+                    hashed subpkt 2 len 4 (sig created 2024-10-29)
+                    hashed subpkt 9 len 4 (key expires after 3y0d0h0m)
+            :public sub key packet:
+            :signature packet: algo 1, keyid F23A739F45D823EE
+                    hashed subpkt 2 len 4 (sig created 2024-10-29)
+                    hashed subpkt 9 len 4 (key expires after 1y0d0h2m)
+
+        We expect 1y expiry = 2025.
+        """
+        value = get_pubkey_expiry(self.TEST1_KEY_WITH_1Y_EXPIRY)
+        self.assertEqual(value, datetime(2025, 10, 29, 11, 7, 35))
+
+    def test_test1_2y_expiry(self):
+        """
+        Test a key with multiple signature packets from the same master key.
+
+        Has the same packets are the test1_1y_expiry, but additionally this:
+
+            :signature packet: algo 1, keyid F23A739F45D823EE
+                    hashed subpkt 2 len 4 (sig created 2024-10-29)
+                    hashed subpkt 9 len 4 (key expires after 2y0d0h5m)
+
+        It should there for use this 2y for the public sub key packet.
+        We expect 2y expiry = 2026.
+        """
+        value = get_pubkey_expiry(self.TEST1_KEY_WITH_2Y_EXPIRY)
+        self.assertEqual(value, datetime(2026, 10, 29, 11, 10, 41))
